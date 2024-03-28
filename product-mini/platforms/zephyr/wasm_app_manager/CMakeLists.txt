@@ -141,6 +141,10 @@ ${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/timer_wrapper.c
 
 add_dependencies(app host-tool wamr-sdk)
 
+# temp 
+set(ZEPHYR_BASE $ENV{ZEPHYR_BASE})
+include (${ZEPHYR_BASE}/samples/subsys/usb/common/common.cmake)
+# ~temp
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 #target_link_libraries(app PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/app/libapp.a)

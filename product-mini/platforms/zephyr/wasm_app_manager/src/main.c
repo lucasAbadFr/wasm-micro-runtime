@@ -18,6 +18,13 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/device.h>
+
+#include <sample_usbd.h>
+
+#include <zephyr/usb/usb_device.h>
+#include <zephyr/usb/usbd.h>
+
+
 #endif /* end of KERNEL_VERSION_NUMBER < 0x030200 */
 
 #include "bh_platform.h"
@@ -34,6 +41,30 @@ static int uart_char_cnt;
 
 const struct device *uart_dev;
 
+uint32_t dtr = 0;
+
+// needed to map uart to usb 
+#if defined(CONFIG_USB_DEVICE_STACK_NEXT)
+static struct usbd_contex *sample_usbd;
+
+static int enable_usb_device_next(void)
+{
+	int err;
+
+	sample_usbd = sample_usbd_init_device(NULL);
+	if (sample_usbd == NULL) {
+		return -ENODEV;
+	}
+
+	err = usbd_enable(sample_usbd);
+	if (err) {
+		return err;
+	}
+
+	return 0;
+}
+#endif /* IS_ENABLED(CONFIG_USB_DEVICE_STACK_NEXT) */
+
 static void uart_irq_callback(const struct device *dev,
 							  void *user_data)
 {
@@ -48,11 +79,21 @@ static void uart_irq_callback(const struct device *dev,
 
 static bool host_init(void)
 {
-	uart_dev = device_get_binding(HOST_DEVICE_COMM_UART_NAME);
+	//uart_dev = device_get_binding(HOST_DEVICE_COMM_UART_NAME);
+	uart_dev =  DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 	if (!uart_dev) {
 		printf("UART: Device driver not found.\n");
 		return false;
 	}
+#if defined(CONFIG_USB_DEVICE_STACK_NEXT)
+	if (enable_usb_device_next()) {
+		return 0;
+	}
+#else
+	if (usb_enable(NULL)) {
+		return 0;
+	}
+#endif
 	uart_irq_rx_enable(uart_dev);
 	uart_irq_callback_set(uart_dev, uart_irq_callback);
 	return true;
@@ -109,6 +150,12 @@ static int iwasm_main(void)
 void main(void)
 {
 	iwasm_main();
+
+	while (!dtr) {
+		uart_line_ctrl_get(uart_dev, UART_LINE_CTRL_DTR, &dtr);
+		/* Give CPU resources to low priority threads. */
+		k_sleep(K_MSEC(100));
+	}
 	for (;;) {
 		k_sleep(Z_TIMEOUT_MS(1000));
 	}
