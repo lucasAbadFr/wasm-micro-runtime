@@ -175,7 +175,6 @@ os_get_invalid_handle()
     return -1;
 }
 
-
 static inline int
 os_getpagesize()
 {
@@ -186,4 +185,5 @@ os_getpagesize()
     return 4096; /* 4KB */
 #endif
 }
+
 #endif
