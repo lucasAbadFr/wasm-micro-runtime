@@ -106,37 +106,37 @@ set(WAMR_SDK_PACKAGE_OUT_DIR
 )
 
 zephyr_compile_definitions_ifdef(WAMR_BUILD_APP_FRAMEWORK
-WASM_ENABLE_APP_FRAMEWORK=1
-WASM_ENABLE_BASE_LIB=1
-attr_container_printf=os_printf
+    WASM_ENABLE_APP_FRAMEWORK=1
+    WASM_ENABLE_BASE_LIB=1
+    attr_container_printf=os_printf
 )
 
 zephyr_include_directories_ifdef(WAMR_BUILD_APP_FRAMEWORK
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native
-${WAMR_ROOT_DIR}/core/shared/coap/er-coap
-${WAMR_ROOT_DIR}/core/shared/coap/extension
-#${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-mgr-shared
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native
+    ${WAMR_ROOT_DIR}/core/shared/coap/er-coap
+    ${WAMR_ROOT_DIR}/core/shared/coap/extension
+    #${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-mgr-shared
 )
 
 zephyr_library_sources_ifdef(WAMR_BUILD_APP_FRAMEWORK
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/app_manager.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/app_manager_host.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/ble_msg.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/event.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/message.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_utils.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_wasm_app.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_wasm_lib.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/resource_reg.c
-${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/watchdog.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/app_ext_lib_export.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared/attr_container.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared/restful_utils.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/base_lib_export.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/request_response.c
-${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/timer_wrapper.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/app_manager.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/app_manager_host.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/ble_msg.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/event.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/message.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_utils.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_wasm_app.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/module_wasm_lib.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/resource_reg.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-mgr/app-manager/watchdog.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/app_ext_lib_export.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared/attr_container.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/app-native-shared/restful_utils.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/base_lib_export.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/request_response.c
+    ${WAMR_APP_FRAMEWORK_DIR}/app-framework/base/native/timer_wrapper.c
 )
 
 add_dependencies(app host-tool wamr-sdk)
@@ -180,6 +180,7 @@ set(WASM_APPS
     request_sender
     event_publisher
     event_subscriber
+    http_get
 )
 
 foreach(WASM_APP ${WASM_APPS})
@@ -192,6 +193,7 @@ foreach(WASM_APP ${WASM_APPS})
       ${WASI_SDK_PATH}/bin/clang -O3
         -I${WAMR_LIBC_BUILTIN_DIR}/include
         -I${WAMR_SDK_PACKAGE_OUT_DIR}/include
+        -I/usr/include/
         -L${WAMR_SDK_PACKAGE_OUT_DIR}/lib
         -lapp_framework
         -z stack-size=8192 -Wl,--initial-memory=65536

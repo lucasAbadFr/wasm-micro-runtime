@@ -117,3 +117,11 @@ int main(void)
 	(void)close(sock);
 	return 0;
 }
+
+void on_destroy(void)
+{
+	/**
+	 * real destroy work including killing timer and closing sensor is
+	 * accomplished in wasm app library version of on_destroy()
+	 */
+}
