@@ -539,7 +539,10 @@ typedef enum {
 
 typedef uint16_t __wasi_ip_port_t;
 
-typedef enum { IPv4 = 0, IPv6 } __wasi_addr_type_t;
+// Ensure that __wasi_addr_type_t has a size of 4 byte (I32).
+// However, it will not have the type safety of enum.
+typedef uint32_t __wasi_addr_type_t;
+enum { IPv4 = 0, IPv6 };
 
 /* n0.n1.n2.n3 */
 typedef struct __wasi_addr_ip4_t {

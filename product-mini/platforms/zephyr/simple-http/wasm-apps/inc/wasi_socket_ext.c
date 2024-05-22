@@ -19,7 +19,7 @@
         return -1;                       \
     }
 
-// temp: to bypass linking problem 
+// temp: to stub linking problem 
 // investing how to link libc.a to the wasm app
 uint16_t ntohs(uint16_t netshort) {
     return ((netshort >> 8) & 0xff) | ((netshort & 0xff) << 8);
@@ -42,7 +42,6 @@ uint32_t htonl(uint32_t netlong) {
            ((netlong & 0xff00) << 8) |
            ((netlong & 0xff) << 24);
 }
-
 // ~temp
 
 static void
@@ -353,7 +352,10 @@ recvfrom(int sockfd, void *buf, size_t len, int flags,
     if (!src_addr) {
         return recv(sockfd, buf, len, flags);
     }
-
+    
+    error = sockaddr_to_wasi_addr(src_addr, *addrlen, &wasi_addr);
+    HANDLE_ERROR(error);
+    
     // Perform system call.
     error = __wasi_sock_recv_from(sockfd, &iov, si_data_len, si_flags,
                                   &wasi_addr, &so_datalen);

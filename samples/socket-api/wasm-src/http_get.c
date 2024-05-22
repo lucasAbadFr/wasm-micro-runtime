@@ -19,7 +19,7 @@
 
 
 /* HTTP server to connect to */
-#define HTTP_HOST "192.0.2.10" 
+#define HTTP_HOST "127.0.0.1" // "192.0.2.10" 
 /* Port to connect to, as string */
 #define HTTP_PORT "8000"
 /* HTTP path to request */
@@ -27,7 +27,7 @@
 
 
 #define SSTRLEN(s) (sizeof(s) - 1)
-// #define CHECK(r) { if (r == -1) { printf("Error %d: " #r "\n", errno); exit(1); } }
+#define CHECK(r) { if (r == -1) { exit(42); } }
 
 #define REQUEST "GET " HTTP_PATH " HTTP/1.0\r\nHost: " HTTP_HOST "\r\n\r\n"
 
@@ -35,19 +35,34 @@ static char response[1024];
 
 int main(int argc, char **argv)
 {
-	int st, sock;
-	struct sockaddr_in addr;
+	int sock;
+	struct sockaddr_in addr, peer_addr;
 	int rc = 0;
 
 	printf("[wasm-mod] Preparing HTTP GET request for http://" HTTP_HOST
 	       ":" HTTP_PORT HTTP_PATH "\n");
 
-	memset(&addr, 0, sizeof(addr));
+	memset(&addr, 0, sizeof(struct sockaddr_in));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(8000);
-	addr.sin_addr.s_addr = htonl(3221225994); // hard coded IP address for 192.0.2.10
+
+	// network order
+	addr.sin_port = 16415; // htons(8000);
+	addr.sin_addr.s_addr = 16777343; // htonl(2130706433);
+	
+	// Misc:
+	// 16777343   : hard coded IP address for 1.0.0.127
+	// 3221225994 : hard coded IP address for 192.0.2.10
+	// 2130706433 : hard coded IP address for 127.0.0.1
+
+	memset(&peer_addr, 0, sizeof(struct sockaddr_in));
+	// Peer is a server binded on 0.0.0.0
+	peer_addr.sin_family = AF_INET;
+	peer_addr.sin_port = 16415; // htons(8000);
+	peer_addr.sin_addr.s_addr = 0; // htonl(0.0.0.0);
+
 
 	sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
 	printf("[wasm-mod] sock = %d\n", sock);
 
 	rc = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
@@ -64,8 +79,9 @@ int main(int argc, char **argv)
 	printf("[wasm-mod] Response:\n\n");
 
 	while (1) {
-		socklen_t socklen = sizeof(struct sockaddr_in);
-		int len = recvfrom(sock, response, sizeof(response) - 1, 0, (struct sockaddr *)&addr, &socklen);
+		socklen_t addrlen = sizeof(struct sockaddr_in);
+		printf("[wasm-mod] sockaddr family = %s\n", peer_addr.sin_family == AF_INET ? "AF_INET" : "AF_INET6");
+		int len = recvfrom(sock, response, sizeof(response) - 1, 0, (struct sockaddr *)&peer_addr, &addrlen);
 
 		if (len < 0) {
 			printf("[wasm-mod] Error %d\n", errno);

@@ -11,6 +11,7 @@ project(socket_api_sample)
 ## Detect toolchain
 #######################################
 message(CHECK_START "Detecting WASI-SDK at /opt/wasi-sdk")
+set(WASI_SDK_DIR "/home/user/wasi-sdk-21.0")
 if(NOT (DEFINED WASI_SDK_DIR OR DEFINED CACHE{WASI_SDK_DIR}))
   find_path(WASI_SDK_PARENT
     wasi-sdk
@@ -101,6 +102,7 @@ ExternalProject_Add(wasm-app
                       multicast_server.wasm ${CMAKE_BINARY_DIR}
                       timeout_client.wasm ${CMAKE_BINARY_DIR}
                       timeout_server.wasm ${CMAKE_BINARY_DIR}
+                      http_get.wasm ${CMAKE_BINARY_DIR}
 )
 
 add_executable(tcp_server ${CMAKE_CURRENT_SOURCE_DIR}/wasm-src/tcp_server.c)
@@ -126,6 +128,8 @@ add_executable(multicast_server ${CMAKE_CURRENT_SOURCE_DIR}/wasm-src/multicast_s
 add_executable(timeout_client ${CMAKE_CURRENT_SOURCE_DIR}/wasm-src/timeout_client.c)
 
 add_executable(timeout_server ${CMAKE_CURRENT_SOURCE_DIR}/wasm-src/timeout_server.c)
+
+add_executable(http_get ${CMAKE_CURRENT_SOURCE_DIR}/wasm-src/http_get.c)
 
 ############################################
 ## Build iwasm with wasi and pthread support
