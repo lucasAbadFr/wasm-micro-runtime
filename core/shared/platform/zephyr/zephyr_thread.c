@@ -582,10 +582,12 @@ os_thread_jit_write_protect_np(bool enabled)
 int
 os_rwlock_init(korp_rwlock *lock)
 {
-    if (lock == NULL) {
+    os_printf("[OS] os_rwlock_init\n");
+    if(!lock){
+        os_printf("[OS] Failed: lock is NULL\n");
         return BHT_ERROR;
     }
-
+        
     k_mutex_init(&lock->mtx);
     k_sem_init(&lock->sem, 0, K_SEM_MAX_LIMIT);
     lock->read_count = 0;

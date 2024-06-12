@@ -95,6 +95,14 @@ typedef struct {
     int read_count;      // Number of readers
 } korp_rwlock;
 
+// Zephyr POSIX definition of rwlock
+// struct posix_rwlock {
+// 	struct k_sem rd_sem;
+// 	struct k_sem wr_sem;
+// 	struct k_sem reader_active; /* blocks WR till reader has acquired lock */
+// 	k_tid_t wr_owner;
+// };
+
 #ifndef Z_TIMEOUT_MS
 #define Z_TIMEOUT_MS(ms) ms
 #endif
@@ -169,12 +177,36 @@ set_exec_mem_alloc_func(exec_mem_alloc_func_t alloc_func,
 
 /* The below types are used in platform_api_extension.h,
    we just define them to make the compiler happy */
-typedef int os_file_handle;
-typedef void *os_dir_stream;
+// typedef int os_file_handle;
+typedef int os_dir_stream; 
 typedef int os_raw_file_handle;
 
+// May need to redefine the following types in the future
+// to handle file descriptor and socket descriptor. 
+// handle for fd
+typedef struct zephyr_fs_desc {
+    char *path;
+    union {
+        struct fs_file_t file;
+        struct fs_dir_t dir;
+    };
+    bool is_dir;
+    bool used;
+}zephyr_fs_desc;
+
+// definition of zephyr_handle 
+typedef struct zephyr_handle {
+    int fd;
+    bool is_sock;
+}zephyr_handle;
+
+typedef struct zephyr_handle os_file_handle;
+
+#define bh_socket_t zephyr_handle
+
+
 /*********************************************************/
-//try to stub POSIX implementation in sandboxed env.
+// Try to stub POSIX implementation in sandboxed env.
 
 typedef struct zsock_pollfd os_poll_file_handle;
 typedef unsigned int os_nfds_t;
@@ -208,7 +240,8 @@ typedef struct {
 static inline os_file_handle
 os_get_invalid_handle()
 {
-    return -1;
+    struct zephyr_handle invalid_handle = { .fd = -1, .is_sock = false };
+    return invalid_handle;
 }
 
 static inline int

@@ -3151,6 +3151,8 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
     char *path, resolved_path[PATH_MAX];
     uint32 i;
 
+    LOG_WARNING("WASI context initialization: START\n");
+
     if (!(wasi_ctx = runtime_malloc(sizeof(WASIContext), NULL, error_buf,
                                     error_buf_size))) {
         return false;
@@ -3216,7 +3218,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
         goto fail;
     }
     addr_pool_inited = true;
-#if !defined(BH_PLATFORM_ZEPHYR) 
+// #if !defined(BH_PLATFORM_ZEPHYR) 
     os_file_handle stdin_file_handle = os_convert_stdin_handle(stdinfd);
     os_file_handle stdout_file_handle = os_convert_stdout_handle(stdoutfd);
     os_file_handle stderr_file_handle = os_convert_stderr_handle(stderrfd);
@@ -3342,7 +3344,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
         if (mapping_copy != mapping_copy_buf)
             wasm_runtime_free(mapping_copy);
     }
-#endif
+// #endif
     /* addr_pool(textual) -> apool */
     for (i = 0; i < addr_pool_size; i++) {
         char *cp, *address, *mask;
@@ -3384,7 +3386,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
     wasi_ctx->env_list = env_list;
     wasi_ctx->ns_lookup_buf = ns_lookup_buf;
     wasi_ctx->ns_lookup_list = ns_lookup_list;
-
+    LOG_WARNING("WASI context initialization: END\n");
     return true;
 
 fail:

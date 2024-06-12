@@ -173,7 +173,8 @@ typedef uint8_t __wasi_eventtype_t;
 
 typedef uint32_t __wasi_exitcode_t;
 
-typedef uint32_t __wasi_fd_t;
+// typedef uint32_t __wasi_fd_t;
+typedef int __wasi_fd_t;
 
 typedef uint16_t __wasi_fdflags_t;
 #define __WASI_FDFLAG_APPEND   (0x0001)

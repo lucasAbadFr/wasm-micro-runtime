@@ -1517,7 +1517,8 @@ path_put(struct path_access *pa) UNLOCKS(pa->fd_object->refcount)
 {
     if (pa->path_start)
         wasm_runtime_free(pa->path_start);
-    if (pa->fd_object->file_handle != pa->fd)
+    /* Can't use `!=` operator when `os_file_handle` is a struct */
+    if (!os_compare_file_handle(pa->fd_object->file_handle, pa->fd))
         os_close(pa->fd, false);
     fd_object_release(NULL, pa->fd_object);
 }
