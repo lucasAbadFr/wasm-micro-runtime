@@ -582,9 +582,7 @@ os_thread_jit_write_protect_np(bool enabled)
 int
 os_rwlock_init(korp_rwlock *lock)
 {
-    os_printf("[OS] os_rwlock_init\n");
     if(!lock){
-        os_printf("[OS] Failed: lock is NULL\n");
         return BHT_ERROR;
     }
         

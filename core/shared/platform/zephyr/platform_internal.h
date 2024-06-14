@@ -200,9 +200,8 @@ typedef struct zephyr_handle {
     bool is_sock;
 }zephyr_handle;
 
-typedef struct zephyr_handle os_file_handle;
-
-#define bh_socket_t zephyr_handle
+typedef struct zephyr_handle *os_file_handle;
+#define bh_socket_t zephyr_handle *
 
 
 /*********************************************************/
@@ -238,10 +237,8 @@ typedef struct {
 /*********************************************************/
 
 static inline os_file_handle
-os_get_invalid_handle()
-{
-    struct zephyr_handle invalid_handle = { .fd = -1, .is_sock = false };
-    return invalid_handle;
+os_get_invalid_handle() {
+    return NULL;
 }
 
 static inline int

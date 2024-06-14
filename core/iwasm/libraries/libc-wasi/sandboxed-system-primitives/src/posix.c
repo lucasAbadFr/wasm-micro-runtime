@@ -357,16 +357,20 @@ fd_table_get_entry(struct fd_table *ft, __wasi_fd_t fd,
     REQUIRES_SHARED(ft->lock)
 {
     // Test for file descriptor existence.
-    if (fd >= ft->size)
+    if (fd >= ft->size){
         return __WASI_EBADF;
+    }
+        
     struct fd_entry *fe = &ft->entries[fd];
-    if (fe->object == NULL)
+    if (fe->object == NULL){
         return __WASI_EBADF;
+    }
 
     // Validate rights.
     if ((~fe->rights_base & rights_base) != 0
-        || (~fe->rights_inheriting & rights_inheriting) != 0)
-        return __WASI_ENOTCAPABLE;
+        || (~fe->rights_inheriting & rights_inheriting) != 0){
+            return __WASI_ENOTCAPABLE;
+        }
     *ret = fe;
     return 0;
 }
@@ -573,7 +577,6 @@ fd_table_insert_existing(struct fd_table *ft, __wasi_fd_t in,
     __wasi_rights_t rights_base = 0, rights_inheriting = 0;
     struct fd_object *fo;
     __wasi_errno_t error;
-
     error =
         fd_determine_type_rights(out, &type, &rights_base, &rights_inheriting);
     if (error != 0) {
@@ -2542,7 +2545,6 @@ wasi_ssp_sock_connect(wasm_exec_env_t exec_env, struct fd_table *curfds,
     if (!addr_pool_search(addr_pool, buf)) {
         return __WASI_EACCES;
     }
-
     error = fd_object_get(curfds, &fo, fd, __WASI_RIGHT_SOCK_BIND, 0);
     if (error != __WASI_ESUCCESS){
         return error;

@@ -3151,8 +3151,6 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
     char *path, resolved_path[PATH_MAX];
     uint32 i;
 
-    LOG_WARNING("WASI context initialization: START\n");
-
     if (!(wasi_ctx = runtime_malloc(sizeof(WASIContext), NULL, error_buf,
                                     error_buf_size))) {
         return false;
@@ -3386,7 +3384,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
     wasi_ctx->env_list = env_list;
     wasi_ctx->ns_lookup_buf = ns_lookup_buf;
     wasi_ctx->ns_lookup_list = ns_lookup_list;
-    LOG_WARNING("WASI context initialization: END\n");
+    
     return true;
 
 fail:
