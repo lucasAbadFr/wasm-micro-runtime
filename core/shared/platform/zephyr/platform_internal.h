@@ -95,7 +95,7 @@ typedef struct {
     int read_count;      // Number of readers
 } korp_rwlock;
 
-// Zephyr POSIX definition of rwlock
+// TODO: Conform to Zephyr POSIX definition of rwlock:
 // struct posix_rwlock {
 // 	struct k_sem rd_sem;
 // 	struct k_sem wr_sem;
@@ -181,9 +181,7 @@ set_exec_mem_alloc_func(exec_mem_alloc_func_t alloc_func,
 typedef int os_dir_stream; 
 typedef int os_raw_file_handle;
 
-// May need to redefine the following types in the future
-// to handle file descriptor and socket descriptor. 
-// handle for fd
+// handle for file system descriptor
 typedef struct zephyr_fs_desc {
     char *path;
     union {
