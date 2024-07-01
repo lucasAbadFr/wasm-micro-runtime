@@ -1,4 +1,4 @@
-#include "benchmark.h"
+#include "../../benchmark.h"
 #include <stdio.h>
 
 #define FIB_NUMBER 10

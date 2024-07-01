@@ -1,7 +1,24 @@
 #include "native_benchmark.h"
-
 #include <string.h>
 #include <stdlib.h>
+
+// Implementation is not good because we initialize the wasm
+// modules in bulk so it consumes more memory than necessary
+// We should initialize the wasm modules one by one
+// We need to refactor this code to have a more generalized interface
+// eg: 
+// ```c
+// typedef void (*BenchmarkFunction)();
+
+// typedef struct {
+//     char* name;
+//     BenchmarkFunction native_function; 
+//     uint8_t* wasm_module;              
+//     size_t wasm_module_size;           
+// } Benchmark;
+// ```
+// We also need to avoid macros usage as it greatly dicreases the 
+// readability of the code.
 
 /* import native benchmarks main functions*/
 extern int bench_ackermann();
@@ -14,18 +31,24 @@ extern int bench_random();
 extern int bench_sieve();
 extern int bench_heapsort();
 extern int bench_nestedloop();
+extern int bench_dummy();
 
 /* Global counter values */
-static int native_bench_start_time = 0;
-static int native_bench_end_time = 0;
+static uint64_t native_bench_start_time = 0;
+static uint64_t native_bench_end_time = 0;
 
 /* function to ensure compatibility */
 void bench_start(void){
-    native_bench_start_time = k_cycle_get_32(); 
+    native_bench_start_time = k_cycle_get_64(); 
 }
 
 void bench_end(void){
-    native_bench_end_time = k_cycle_get_32();
+    native_bench_end_time = k_cycle_get_64();
+}
+
+void reset_times(){
+    native_bench_start_time = 0;
+    native_bench_end_time = 0;
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -40,63 +63,81 @@ void benchmark_banner(void){
     printk("\t - random :                %s\n", BENCHMARK_RANDOM ? "YES" : "NO");
     printk("\t - sieve :                 %s\n", BENCHMARK_SIEVE ? "YES" : "NO");
     printk("\t - heapsort (unsupported): %s\n", BENCHMARK_HEAPSORT ? "YES" : "NO");
-    printk("\t - nestedloop (unfair):    %s\n", BENCHMARK_NESTEDLOOP ? "YES" : "NO");
+    printk("\t - nestedloop :            %s\n", BENCHMARK_NESTEDLOOP ? "YES" : "NO");
+    printk("\t - dummy :                 %s\n", BENCHMARK_DUMMY ? "YES" : "NO");
 }
 
+//-------------------------------------------------------------------------------------------//
 void call_bench_main(void){
 #if BENCHMARK_ACKERMANN
     bench_ackermann();
-    printk("[ackermann] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[ackermann] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_BASE64
     bench_base64();
-    printk("[base64] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[base64] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_FIB2
     bench_fib2();
-    printk("[fib2] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[fib2] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_GIMLI
     bench_gimli();
-    printk("[gimli] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[gimli] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_MATRIX
     bench_matrix();
-    printk("[matrix] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[matrix] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_MEMMOVE
     bench_memmove();
-    printk("[memmove] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[memmove] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_RANDOM
     bench_random();
-    printk("[random] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[random] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_SIEVE
     bench_sieve();
-    printk("[sieve] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[sieve] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_HEAPSORT
     bench_heapsort();
-    printk("[heapsort] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[heapsort] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 
 #if BENCHMARK_NESTEDLOOP
     bench_nestedloop();
-    printk("[nestedloop] elapsed: %d ticks\n", (native_bench_end_time - native_bench_start_time));
+    printk("[nestedloop] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_DUMMY
+    bench_dummy();
+    printk("[dummy] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
 #endif
 }
 
 //-------------------------------------------------------------------------------------------//
-#define MAX_BENCHMARKS 10
+#define MAX_BENCHMARKS 11
 
 Benchmark benchmarks[MAX_BENCHMARKS];
 int bench_nb = -1;
@@ -155,8 +196,6 @@ void initialize_benchmarks() {
     uint8_t *wasm_file_buf = NULL;
     size_t wasm_file_size = 0;
 
-// could be good to pass macro from cmake to the code.
-// may revise the way to include the wasm modules
 printk("[INFO] Initializing webassembly benchmarks\n");
 
 #if BENCHMARK_ACKERMANN
@@ -237,5 +276,13 @@ printk("[INFO] Initializing webassembly benchmarks\n");
     wasm_file_size = sizeof(wasm_nestedloop);
 
     allocate_benchmark("bench_nestedloop", wasm_nestedloop, wasm_file_size);
+#endif
+
+#if BENCHMARK_DUMMY
+#include "dummy.h"
+    wasm_file_buf = (uint8_t *)wasm_dummy;
+    wasm_file_size = sizeof(wasm_dummy);
+
+    allocate_benchmark("bench_dummy", wasm_dummy, wasm_file_size);
 #endif
 }

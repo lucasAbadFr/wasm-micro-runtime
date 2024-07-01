@@ -30,7 +30,7 @@ if(DEFINED ENV{WAMR_ROOT_DIR})
 else()
   message(FATAL_ERROR "'WAMR_ROOT_DIR' need to be specified")
 endif()
-message("wasi-sdk was found at ${WAMR_ROOT_DIR}")
+message("wamr was found at ${WAMR_ROOT_DIR}")
 
 # Check if WASI_SDK_PATH is set 
 if(NOT $ENV{WASI_SDK_PATH} STREQUAL "")

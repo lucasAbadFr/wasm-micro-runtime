@@ -112,17 +112,21 @@ static int littlefs_mount(struct fs_mount_t *mp)
 #endif 
 
 //-------------------------------------------------------------------------------------------//
-static int wasm_bench_start_time = 0;
-static int wasm_bench_end_time = 0;
+static uint64_t wasm_bench_start_time = 0;
+static uint64_t wasm_bench_end_time = 0;
 
 void wasm_bench_start(wasm_exec_env_t exec_env){
-    wasm_bench_start_time =  k_cycle_get_32(); 
+    wasm_bench_start_time =  k_cycle_get_64(); 
 }
 
 void wasm_bench_end(wasm_exec_env_t exec_env){
-    wasm_bench_end_time =  k_cycle_get_32();
+    wasm_bench_end_time =  k_cycle_get_64();
 }
 
+void wasm_reset_times(){
+    wasm_bench_start_time = 0;
+    wasm_bench_end_time = 0;
+}
 static NativeSymbol native_symbols[] =
 {
     {
@@ -139,18 +143,6 @@ static NativeSymbol native_symbols[] =
 
 //-------------------------------------------------------------------------------------------//
 #include "native_benchmark.h"
-// static int native_bench_start_time = 0;
-// static int native_bench_end_time = 0;
-
-/* function to ensure compatibility */
-// void bench_start(void){
-//     native_bench_start_time = k_cycle_get_32(); 
-// }
-
-// void bench_end(void){
-//     native_bench_end_time = k_cycle_get_32();
-// }
-
 /* array conataining every benchmark info*/
 extern Benchmark benchmarks[10];
 extern int bench_nb;
@@ -220,6 +212,8 @@ int main(void)
     memset(&init_args, 0, sizeof(RuntimeInitArgs));
     memset(benchmarks, 0, sizeof(benchmarks));
 
+    printk("timer has 64bits : %s\n", CONFIG_TIMER_HAS_64BIT_CYCLE_COUNTER ? "yes" : "no");
+
     /* Initialize every benchmarks information in the benchmarks array*/
     initialize_benchmarks();
     
@@ -265,8 +259,9 @@ int main(void)
     for (int i = 0; i <= bench_nb; ++i) { 
         if(benchmarks[i].func_name != NULL){
             if(load_and_run_bench(&benchmarks[i])){
-                printk("[%s] elapsed: %d ticks\n", benchmarks[i].func_name + 6, (wasm_bench_end_time - wasm_bench_start_time));
-                deallocate_benchmark(&benchmarks[i]);
+                printk("[%s] elapsed: %llu ticks\n", benchmarks[i].func_name + 6, (wasm_bench_end_time - wasm_bench_start_time));
+                wasm_reset_times();
+                deallocate_benchmark(&benchmarks[i]); // Deallocate the benchmark
             } else {
                 LOG_ERR("Failed to run benchmark: %s", benchmarks[i].func_name);
             } 

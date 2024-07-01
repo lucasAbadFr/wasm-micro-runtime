@@ -4,15 +4,6 @@
 #include <zephyr/kernel.h>
 #include "config.h" 
 
-
-// static void _black_box(void *x)us
-// {
-//     (void)x;
-// }
-// static void (*volatile black_box)(void *x) = _black_box;
-
-// #define BLACK_BOX(X) black_box((void *)&(X))
-
 /* types and functions definitions */
 typedef struct {
     char* func_name;            // Name of the function to run

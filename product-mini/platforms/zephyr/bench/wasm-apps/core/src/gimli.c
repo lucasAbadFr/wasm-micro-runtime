@@ -1,4 +1,4 @@
-#include "benchmark.h"
+#include "../../benchmark.h"
 #include <stdint.h>
 
 #define gimli_ITERATIONS 10000 // 10000

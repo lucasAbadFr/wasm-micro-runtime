@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "benchmark.h"
-#include "ackermann.h"
+#include "../../benchmark.h"
 
 int ackermann(int M, int N)
 {
