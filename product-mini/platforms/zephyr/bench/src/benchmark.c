@@ -32,6 +32,11 @@ extern int bench_sieve();
 extern int bench_heapsort();
 extern int bench_nestedloop();
 extern int bench_dummy();
+extern int bench_socket_create();
+extern int bench_socket_connect();
+extern int bench_socket_bind();
+extern int bench_socket_sendto();
+extern int bench_socket_recvfrom();
 
 /* Global counter values */
 static uint64_t native_bench_start_time = 0;
@@ -65,6 +70,11 @@ void benchmark_banner(void){
     printk("\t - heapsort (unsupported): %s\n", BENCHMARK_HEAPSORT ? "YES" : "NO");
     printk("\t - nestedloop :            %s\n", BENCHMARK_NESTEDLOOP ? "YES" : "NO");
     printk("\t - dummy :                 %s\n", BENCHMARK_DUMMY ? "YES" : "NO");
+    printk("\t - socket_create :         %s\n", BENCHMARK_SOCKET_CREATE ? "YES" : "NO");
+    printk("\t - socket_connect :        %s\n", BENCHMARK_SOCKET_CONNECT ? "YES" : "NO");
+    printk("\t - socket_bind :           %s\n", BENCHMARK_SOCKET_BIND ? "YES" : "NO");
+    printk("\t - socket_sendto :         %s\n", BENCHMARK_SOCKET_SENDTO ? "YES" : "NO");
+    printk("\t - socket_recvfrom :       %s\n", BENCHMARK_SOCKET_RECVFROM ? "YES" : "NO");
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -134,10 +144,40 @@ void call_bench_main(void){
     printk("[dummy] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
     reset_times();
 #endif
+
+#if BENCHMARK_SOCKET_CREATE
+    bench_socket_create();
+    printk("[socket_create] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_SOCKET_CONNECT
+    bench_socket_connect();
+    printk("[socket_connect] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_SOCKET_BIND
+    bench_socket_bind();
+    printk("[socket_bind] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_SOCKET_SENDTO
+    bench_socket_sendto();
+    printk("[socket_sendto] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_SOCKET_RECVFROM
+    bench_socket_recvfrom();
+    printk("[socket_recvfrom] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
 }
 
 //-------------------------------------------------------------------------------------------//
-#define MAX_BENCHMARKS 11
+#define MAX_BENCHMARKS 15
 
 Benchmark benchmarks[MAX_BENCHMARKS];
 int bench_nb = -1;
@@ -282,7 +322,41 @@ printk("[INFO] Initializing webassembly benchmarks\n");
 #include "dummy.h"
     wasm_file_buf = (uint8_t *)wasm_dummy;
     wasm_file_size = sizeof(wasm_dummy);
-
     allocate_benchmark("bench_dummy", wasm_dummy, wasm_file_size);
+#endif
+
+#if BENCHMARK_SOCKET_CREATE
+#include "socket_create.h"
+    wasm_file_buf = (uint8_t *)wasm_socket_create;
+    wasm_file_size = sizeof(wasm_socket_create);
+    allocate_benchmark("bench_socket_create", wasm_socket_create, wasm_file_size);
+#endif
+
+#if BENCHMARK_SOCKET_CONNECT
+#include "socket_connect.h"
+    wasm_file_buf = (uint8_t *)wasm_socket_connect;
+    wasm_file_size = sizeof(wasm_socket_connect);
+    allocate_benchmark("bench_socket_connect", wasm_socket_connect, wasm_file_size);
+#endif
+
+#if BENCHMARK_SOCKET_BIND
+#include "socket_bind.h"
+    wasm_file_buf = (uint8_t *)wasm_socket_bind;
+    wasm_file_size = sizeof(wasm_socket_bind);
+    allocate_benchmark("bench_socket_bind", wasm_socket_bind, wasm_file_size);
+#endif
+
+#if BENCHMARK_SOCKET_SENDTO
+#include "socket_sendto.h"
+    wasm_file_buf = (uint8_t *)wasm_socket_sendto;
+    wasm_file_size = sizeof(wasm_socket_sendto);
+    allocate_benchmark("bench_socket_sendto", wasm_socket_sendto, wasm_file_size);
+#endif
+
+#if BENCHMARK_SOCKET_RECVFROM
+#include "socket_recvfrom.h"
+    wasm_file_buf = (uint8_t *)wasm_socket_recvfrom;
+    wasm_file_size = sizeof(wasm_socket_recvfrom);
+    allocate_benchmark("bench_socket_recvfrom", wasm_socket_recvfrom, wasm_file_size);
 #endif
 }

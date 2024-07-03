@@ -68,16 +68,16 @@ BENCHMARKS = {
     "thread":[],
     "socket":[
         "socket_create",
+        "socket_connect",
+        "socket_bind",
+        "socket_sendto",
+        "socket_recvfrom",
         ],
     "fileSystem":[],
 } 
 
 
-# subprocess.run( [f"ZEPHYR_BASE={ZEPHYR_BASE}", f"WAMR_ROOT_DIR={WAMR_ROOT_DIR}", 
-#          f"WASI_SDK_PATH={WASI_SDK_PATH}", f"WAMR_APP_FRAMEWORK_DIR={WAMR_APP_FRAMEWORK_DIR}",
-#          "west", "build", ".", "-b", "nucleo_h743zi", "-p", "always"], check=True)
-
-
+# Abstract class for benchmark suite
 class BenchmarkSuite(ABC):
     def __init__(self, suite_name: str, source_dir: str, output_dirs: dict):
         self.suite_name = suite_name
@@ -90,6 +90,10 @@ class BenchmarkSuite(ABC):
 
     @abstractmethod
     def build_native(self, benchmark_name):
+        pass
+
+    @abstractmethod
+    def clean(self, benchmark_name):
         pass
 
     def convert_wasm_to_c_header(self, input_file, output_file, benchmark_name):
@@ -114,7 +118,8 @@ class BenchmarkSuite(ABC):
             header_file.write(output_content)
         
         print(f"Conversion complete. Output saved to {output_file}")
-        
+
+# Concrete class for core benchmark suite        
 class CoreSuite(BenchmarkSuite):
     def __init__(self):
         super().__init__("core", SOURCE_DIRS["core"], OUTPUT_DIRS["core"])
@@ -127,7 +132,7 @@ class CoreSuite(BenchmarkSuite):
                "-O2",
                "-z",
                "stack-size=8192",
-               "-Wl,--initial-memory=65536",
+               "-Wl,--max-memory=65536",
                "-Wl,--allow-undefined,--no-entry",
                "-Wl,--export=__heap_base,--export=__data_end",
                f"-Wl,--export=bench_{benchmark_name}",
@@ -153,7 +158,16 @@ class CoreSuite(BenchmarkSuite):
             subprocess.run(COMMAND, check=True)
         except  subprocess.CalledProcessError as e:
             print(f"{e}")
-
+    
+    def clean(self, benchmark_name):
+        if os.path.exists(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm"):
+            os.remove(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm")
+        if os.path.exists(f"{self.output_dirs['native']}/{benchmark_name}.o"):
+            os.remove(f"{self.output_dirs['native']}/{benchmark_name}.o")
+        if os.path.exists(f"{APP_SRC_DIR}/{benchmark_name}.h"):
+            os.remove(f"{APP_SRC_DIR}/{benchmark_name}.h")
+        
+# Concrete class for socket benchmark suite
 class SocketSuite(BenchmarkSuite):
     def __init__(self):
         super().__init__("socket", SOURCE_DIRS["socket"], OUTPUT_DIRS["socket"])
@@ -194,7 +208,7 @@ class SocketSuite(BenchmarkSuite):
                "-O2",
                "-z",
                "stack-size=8192",
-               "-Wl,--initial-memory=65536",
+               "-Wl,--max-memory=65536",
                "-Wl,--allow-undefined,--no-entry",
                f"-Wl,--export=bench_{benchmark_name}",
                "-o",
@@ -209,7 +223,12 @@ class SocketSuite(BenchmarkSuite):
         print(f"Building {benchmark_name}.o")
         COMMAND = [f"{ZEPHYR_ARM_EABI}/bin/arm-zephyr-eabi-gcc",
                 "-O2",
-                "-mcpu=cortex-m33+nodsp+nofp", "-mthumb", "-mabi=aapcs", "-mtp=soft",
+                # "-DARCH=armv8-m.main",
+                # "-DBOARD=nucleo_h563zi",
+                # "-DCONFIG_ARM=y",
+                "-DCPU_CORTEX_M33=y",
+                f"-I{ZEPHYR_BASE}/include",
+                "-mcpu=cortex-m33", "-mthumb", "-mabi=aapcs", "-mtp=soft",
                 "-c",
                 "-o",
                 f"{self.output_dirs['native']}/{benchmark_name}.o",
@@ -218,70 +237,74 @@ class SocketSuite(BenchmarkSuite):
             subprocess.run(COMMAND, check=True)
         except  subprocess.CalledProcessError as e:
             print(f"{e}")
-        
-class SerialReader(threading.Thread):
-    def __init__(self, port, baud_rate=9600):
-        super().__init__()
-        self.serial_port = serial.Serial(port, baud_rate, timeout=1)
-        self.running = True
-        self.data = []  # Shared structure to store results
+            
+    def clean(self, benchmark_name):
+        if os.path.exists(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm"):
+            os.remove(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm")
+        if os.path.exists(f"{self.output_dirs['native']}/{benchmark_name}.o"):
+            os.remove(f"{self.output_dirs['native']}/{benchmark_name}.o")
+        if os.path.exists(f"{APP_SRC_DIR}/{benchmark_name}.h"):
+            os.remove(f"{APP_SRC_DIR}/{benchmark_name}.h")
+        if os.path.exists(f"{INC_DIR}/wasi_socket_ext.o"):
+            os.remove(f"{INC_DIR}/wasi_socket_ext.o")
+        if os.path.exists(f"{INC_DIR}/libwasi_socket_ext.a"):
+            os.remove(f"{INC_DIR}/libwasi_socket_ext.a")
 
-    def run(self):
-        while self.running:
-            if self.serial_port.in_waiting:
-                line = self.serial_port.readline().decode('utf-8').strip()
-                self.data += line
-                # Process the line here and store in self.data
-                # Example: self.data[benchmark_name] = result
-                # print(line)  # For demonstration
+# Generic function to clean generated files
+def clean_generated_files(suite: BenchmarkSuite) -> None:
+    if isinstance(suite, CoreSuite) or isinstance(suite, SocketSuite):
+        for benchmark in BENCHMARKS[suite.suite_name]:
+            suite.clean(benchmark)
+    else:
+        print("Unsupported suite type.")
 
-    def stop(self):
-        self.running = False
-        self.serial_port.close()
+# Generic function to build benchmarks
+def build_benchmarks(suite: BenchmarkSuite) -> None:
+    if isinstance(suite, CoreSuite) or isinstance(suite, SocketSuite):
+        for benchmark in BENCHMARKS[suite.suite_name]:
+            suite.build_wasm(benchmark)
+            suite.build_native(benchmark)
+            suite.convert_wasm_to_c_header(
+                f"{suite.output_dirs['wasm']}/{benchmark}.wasm",
+                f"{APP_SRC_DIR}/{benchmark}.h",
+                benchmark
+            )
+    else: 
+        print("Unsupported suite type.")
 
-
+# Function to parse command line arguments
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Build benchmarks.')
     parser.add_argument('-s', '--suite', choices=['core', 'socket', 'thread', 'filesystem'], required=True, help='Benchmark suite to build')
+    parser.add_argument('--clean', action='store_true', help='Clean generated files for the selected suite')
     return parser.parse_args()  
 
 if __name__ == "__main__":
     args = parse_arguments()
-    # serial_reader = SerialReader("/dev/ttyACM0", 115200)
-    # serial_reader.start()
     selected_suite = args.suite
-    benchmarks = BENCHMARKS[args.suite]
     
     if selected_suite == "core":
-        print("Building core suite.")
         core_suite = CoreSuite()
-        
-        for benchmark in benchmarks:
-            core_suite.build_wasm(benchmark)
-            core_suite.build_native(benchmark)
-            core_suite.convert_wasm_to_c_header(
-                f"{core_suite.output_dirs['wasm']}/{benchmark}.wasm",
-                f"{APP_SRC_DIR}/{benchmark}.h",
-                benchmark
-            )
-
-        print("Build complete.")
+        if args.clean:
+            clean_generated_files(core_suite)
+            print("Cleaned core suite generated files.")
+        else:
+            print("Build core suite.")
+            build_benchmarks(core_suite)
+            print("Build complete.")
+            
     elif selected_suite == "socket":
-        print("Building socket suite.")
         socket_suite = SocketSuite()
-        socket_suite.build_static_lib()
-    
-        for benchmark in benchmarks:
-            socket_suite.build_wasm(benchmark)
-            socket_suite.build_native(benchmark)
-            socket_suite.convert_wasm_to_c_header(
-                f"{socket_suite.output_dirs['wasm']}/{benchmark}.wasm",
-                f"{APP_SRC_DIR}/{benchmark}.h",
-                benchmark
-            )
-        
-        print("Build complete.")
-        print("[WARNING] Ensure that 'WAMR_BUILD_LIBC_WASI' is enabled in the 'CMakeLists.txt'.")                
+        if args.clean:
+            clean_generated_files(socket_suite)
+            print("Cleaned core suite generated files.")
+        else:
+            print("Build core suite.")
+            socket_suite.build_static_lib()
+            build_benchmarks(socket_suite)
+            print("Build complete.")
+            print("[WARNING] Ensure that 'WAMR_BUILD_LIBC_WASI' is enabled in the 'CMakeLists.txt'.") 
+              
     elif selected_suite == "thread":
         print("Unsupported suite name.")
         pass
@@ -290,52 +313,3 @@ if __name__ == "__main__":
         pass
     else:
         print("Invalid suite name.")
-        
-    
-
-        # try:
-        #     # Place benchmark execution code here
-        #     # The serial reader will collect data in the background
-        #     west_build()
-        #     west_flash()
-        #     pass
-        # finally:
-        #     # Stop the serial reader thread after benchmarking
-        #     # serial_reader.stop()
-        #     # serial_reader.join()
-    
-    # Process or print the collected data
-    # print(serial_reader.data)
-    
-    
-# def west_build():
-#     env = os.environ.copy()
-    
-#     # Get the path to the virtual environment's bin directory
-#     venv_bin_path = os.path.join(os.path.dirname(sys.executable), 'bin')
-    
-#     # Prepend the virtual environment's bin directory to the PATH
-#     env["PATH"] = venv_bin_path + os.pathsep + env["PATH"]
-    
-#     env["ZEPHYR_BASE"] = ZEPHYR_BASE
-#     env["WAMR_ROOT_DIR"] = WAMR_ROOT_DIR
-#     env["WASI_SDK_PATH"] = WASI_SDK_PATH
-#     env["WAMR_APP_FRAMEWORK_DIR"] = WAMR_APP_FRAMEWORK_DIR
-    
-#     COMMAND = ["west",
-#               "build",
-#               ".",
-#               "-b",
-#               "nucleo_h743zi",
-#               "-p",
-#               "always"]
-#     try: 
-#         subprocess.run(COMMAND, env=env, check=True)
-#     except  subprocess.CalledProcessError as e:
-#         print(f"{e}")
-
-# def west_flash():
-#     try:
-#         subprocess.run( [f"ZEPHYR_BASE={ZEPHYR_BASE}", "west", "flash"], check=True)
-#     except  subprocess.CalledProcessError as e:
-#         print(f"{e}")

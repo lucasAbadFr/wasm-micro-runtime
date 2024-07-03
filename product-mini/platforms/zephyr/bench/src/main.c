@@ -22,8 +22,8 @@
 #include <unistd.h>
 
 #define CONFIG_HEAP_MEM_POOL_SIZE WASM_GLOBAL_HEAP_SIZE
-#define CONFIG_APP_STACK_SIZE 16384 // 8192 
-#define CONFIG_APP_HEAP_SIZE 16384 // 8192
+#define CONFIG_APP_STACK_SIZE 8192 // 16384 // 8192 
+#define CONFIG_APP_HEAP_SIZE 8192 // 16384 // 8192
 
 LOG_MODULE_REGISTER(main);
 
@@ -162,6 +162,15 @@ bool load_and_run_bench(const Benchmark *benchmark) {
         return false;
     }
 
+        /* Set the WASI context */
+#if WASM_ENABLE_LIBC_WASI != 0
+    #define ADDRESS_POOL_SIZE 1
+    const char *addr_pool[ADDRESS_POOL_SIZE] = {
+        "192.0.2.10/24"};
+
+    wasm_runtime_set_wasi_addr_pool(wasm_module, addr_pool, ADDRESS_POOL_SIZE);
+#endif /* WASM_ENABLE_LIBC_WASI */
+
     /* Instantiate the module */
     if (!(wasm_module_inst = wasm_runtime_instantiate(wasm_module, CONFIG_APP_STACK_SIZE, CONFIG_APP_HEAP_SIZE, error_buf, sizeof(error_buf)))) {
         LOG_ERR("Failed to instantiate module: %s", error_buf);
@@ -177,13 +186,17 @@ bool load_and_run_bench(const Benchmark *benchmark) {
             return -1;
         }
         wasm_runtime_call_wasm(exec_env, func, 1, func_argv);
-
+        k_sleep(K_MSEC(1000)); // wait for execution to finish 
         wasm_runtime_destroy_exec_env(exec_env);
     }
 
     if ((exception = wasm_runtime_get_exception(wasm_module_inst)))
     LOG_ERR("get exception: %s", exception);
-
+    
+#if WASM_ENABLE_LIBC_WASI != 0
+    int rc = wasm_runtime_get_wasi_exit_code(wasm_module_inst);
+    LOG_INF("wasi exit code: %d", rc);
+#endif
 
     /* Deinstantiate the module */
     wasm_runtime_deinstantiate(wasm_module_inst);
@@ -214,12 +227,12 @@ int main(void)
 
     printk("timer has 64bits : %s\n", CONFIG_TIMER_HAS_64BIT_CYCLE_COUNTER ? "yes" : "no");
 
-    /* Initialize every benchmarks information in the benchmarks array*/
-    initialize_benchmarks();
-    
     /* Display info about benchmarks run */
     benchmark_banner();
     printk("\n");
+
+    /* Initialize every benchmarks information in the benchmarks array*/
+    initialize_benchmarks();
 
 #if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
     init_args.mem_alloc_type = Alloc_With_Pool;
@@ -244,16 +257,6 @@ int main(void)
         LOG_ERR("Register natives failed.");
     }
 
-    /* Set the WASI context */
-#if WASM_ENABLE_LIBC_WASI != 0
-#define DIR_LIST_SIZE 1
-    const char *dir_list[DIR_LIST_SIZE] = {
-        "/lfs",
-    };
-
-    wasm_runtime_set_wasi_args(wasm_module, dir_list, DIR_LIST_SIZE, NULL, 0, NULL, 0, NULL, 0);
-#endif
-
     /* Load and run all wasm benchmarks */
     printk("[INFO] Running wasm benchmarks\n");
     for (int i = 0; i <= bench_nb; ++i) { 
@@ -264,15 +267,10 @@ int main(void)
                 deallocate_benchmark(&benchmarks[i]); // Deallocate the benchmark
             } else {
                 LOG_ERR("Failed to run benchmark: %s", benchmarks[i].func_name);
+                deallocate_benchmark(&benchmarks[i]); // Deallocate the benchmark
             } 
         }
     }
-
-#if WASM_ENABLE_LIBC_WASI != 0
-    rc = wasm_runtime_get_wasi_exit_code(wasm_module_inst);
-    LOG_INF("wasi exit code: %d", rc);
-#endif
-
 
 fail1:
     /* destroy runtime environment */

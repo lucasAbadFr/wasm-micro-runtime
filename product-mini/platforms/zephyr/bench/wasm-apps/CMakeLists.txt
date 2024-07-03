@@ -11,21 +11,25 @@ set(ZEPHYR_ARM_EABI "/home/user/zephyr-sdk-0.16.5-1/arm-zephyr-eabi")
 include(${WASI_SDK_PREFIX}/share/cmake/wasi-sdk.cmake)
 
 # Set benchmark variables to enable/disable benchmarks
-set(BENCHMARK_SUITE_CORE 1)
-  set(BENCHMARK_ACKERMANN  1)
-  set(BENCHMARK_BASE64     1)
-  set(BENCHMARK_FIB2       1)
-  set(BENCHMARK_GIMLI      1)
-  set(BENCHMARK_MATRIX     1)
-  set(BENCHMARK_MEMMOVE    1)
-  set(BENCHMARK_RANDOM     1)
-  set(BENCHMARK_SIEVE      1)
+set(BENCHMARK_SUITE_CORE 0)
+  set(BENCHMARK_ACKERMANN  0)
+  set(BENCHMARK_BASE64     0)
+  set(BENCHMARK_FIB2       0)
+  set(BENCHMARK_GIMLI      0)
+  set(BENCHMARK_MATRIX     0)
+  set(BENCHMARK_MEMMOVE    0)
+  set(BENCHMARK_RANDOM     0)
+  set(BENCHMARK_SIEVE      0)
   set(BENCHMARK_HEAPSORT   0)
-  set(BENCHMARK_NESTEDLOOP 1)
-  set(BENCHMARK_DUMMY      1)
+  set(BENCHMARK_NESTEDLOOP 0)
+  set(BENCHMARK_DUMMY      0)
 
-set(BENCHMARK_SUITE_SOCKET 0)
+set(BENCHMARK_SUITE_SOCKET 1)
   set(BENCHMARK_SOCKET_CREATE       0)
+  set(BENCHMARK_SOCKET_CONNECT      0)
+  set(BENCHMARK_SOCKET_BIND         0)
+  set(BENCHMARK_SOCKET_SENDTO       0)
+  set(BENCHMARK_SOCKET_RECVFROM     1)
 
 # Set definitions based on benchmark variables for the parent scope
 set(BENCHMARK_DEFINITIONS
@@ -40,6 +44,11 @@ set(BENCHMARK_DEFINITIONS
   "-DENABLE_BENCHMARK_HEAPSORT=${BENCHMARK_HEAPSORT}"
   "-DENABLE_BENCHMARK_NESTEDLOOP=${BENCHMARK_NESTEDLOOP}"
   "-DENABLE_BENCHMARK_DUMMY=${BENCHMARK_DUMMY}"
+  "-DENABLE_BENCHMARK_SOCKET_CREATE=${BENCHMARK_SOCKET_CREATE}"
+  "-DENABLE_BENCHMARK_SOCKET_CONNECT=${BENCHMARK_SOCKET_CONNECT}"
+  "-DENABLE_BENCHMARK_SOCKET_BIND=${BENCHMARK_SOCKET_BIND}"
+  "-DENABLE_BENCHMARK_SOCKET_SENDTO=${BENCHMARK_SOCKET_SENDTO}"
+  "-DENABLE_BENCHMARK_SOCKET_RECVFROM=${BENCHMARK_SOCKET_RECVFROM}"
   PARENT_SCOPE
 )
 
@@ -66,6 +75,11 @@ add_benchmark_source(BENCHMARK_SIEVE sieve)
 add_benchmark_source(BENCHMARK_HEAPSORT heapsort)
 add_benchmark_source(BENCHMARK_NESTEDLOOP nestedloop)
 add_benchmark_source(BENCHMARK_DUMMY dummy)
+add_benchmark_source(BENCHMARK_SOCKET_CREATE socket_create)
+add_benchmark_source(BENCHMARK_SOCKET_CONNECT socket_connect)
+add_benchmark_source(BENCHMARK_SOCKET_BIND socket_bind)
+add_benchmark_source(BENCHMARK_SOCKET_SENDTO socket_sendto)
+add_benchmark_source(BENCHMARK_SOCKET_RECVFROM socket_recvfrom)
 
 # Now, BENCHMARK_LIST contains all enabled benchmark source files
 # We can use this list to build the benchmarks
