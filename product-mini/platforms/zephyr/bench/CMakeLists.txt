@@ -92,7 +92,8 @@ add_subdirectory(wasm-apps)
 # Set the benchmark definitions
 target_compile_definitions(app PRIVATE ${BENCHMARK_DEFINITIONS})
 
-# add_dependencies(app ${BENCH_NATIVE_OBJECT})
+# Force the POSIX API, because frozen in Kconfig
+target_compile_definitions(app PRIVATE CONFIG_POSIX_API=1)
 
 # Build the WAMR runtime 
 target_sources(app PRIVATE

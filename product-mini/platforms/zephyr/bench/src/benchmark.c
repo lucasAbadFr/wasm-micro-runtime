@@ -37,6 +37,15 @@ extern int bench_socket_connect();
 extern int bench_socket_bind();
 extern int bench_socket_sendto();
 extern int bench_socket_recvfrom();
+extern int bench_fs_fopen();
+extern int bench_fs_fwrite();
+extern int bench_fs_fread();
+extern int bench_fs_fseek();
+extern int bench_fs_fclose();
+extern int bench_fs_unlink();
+extern int bench_fs_mkdir();
+extern int bench_fs_rename();
+extern int bench_fs_perf();
 
 /* Global counter values */
 static uint64_t native_bench_start_time = 0;
@@ -75,6 +84,15 @@ void benchmark_banner(void){
     printk("\t - socket_bind :           %s\n", BENCHMARK_SOCKET_BIND ? "YES" : "NO");
     printk("\t - socket_sendto :         %s\n", BENCHMARK_SOCKET_SENDTO ? "YES" : "NO");
     printk("\t - socket_recvfrom :       %s\n", BENCHMARK_SOCKET_RECVFROM ? "YES" : "NO");
+    printk("\t - fs_fopen :              %s\n", BENCHMARK_FS_FOPEN ? "YES" : "NO");
+    printk("\t - fs_fwrite :             %s\n", BENCHMARK_FS_FWRITE ? "YES" : "NO");
+    printk("\t - fs_fread :              %s\n", BENCHMARK_FS_FREAD ? "YES" : "NO");
+    printk("\t - fs_fseek :              %s\n", BENCHMARK_FS_FSEEK ? "YES" : "NO");
+    printk("\t - fs_fclose :             %s\n", BENCHMARK_FS_FCLOSE ? "YES" : "NO");
+    printk("\t - fs_unlink :             %s\n", BENCHMARK_FS_UNLINK ? "YES" : "NO");
+    printk("\t - fs_mkdir :              %s\n", BENCHMARK_FS_MKDIR ? "YES" : "NO");
+    printk("\t - fs_rename :             %s\n", BENCHMARK_FS_RENAME ? "YES" : "NO");
+    printk("\t - fs_perf :               %s\n", BENCHMARK_FS_PERF ? "YES" : "NO");
 }
 
 //-------------------------------------------------------------------------------------------//
@@ -172,6 +190,60 @@ void call_bench_main(void){
 #if BENCHMARK_SOCKET_RECVFROM
     bench_socket_recvfrom();
     printk("[socket_recvfrom] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_FOPEN
+    bench_fs_fopen();
+    printk("[fs_fopen] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_FWRITE
+    bench_fs_fwrite();
+    printk("[fs_fwrite] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_FREAD
+    bench_fs_fread();
+    printk("[fs_fread] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_FSEEK
+    bench_fs_fseek();
+    printk("[fs_fseek] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_FCLOSE
+    bench_fs_fclose();
+    printk("[fs_fclose] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_UNLINK
+    bench_fs_unlink();
+    printk("[fs_unlink] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_MKDIR
+    bench_fs_mkdir();
+    printk("[fs_mkdir] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_RENAME
+    bench_fs_rename();
+    printk("[fs_rename] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
+    reset_times();
+#endif
+
+#if BENCHMARK_FS_PERF
+    bench_fs_perf();
+    printk("[fs_perf] elapsed: %llu ticks\n", (native_bench_end_time - native_bench_start_time));
     reset_times();
 #endif
 }
@@ -358,5 +430,68 @@ printk("[INFO] Initializing webassembly benchmarks\n");
     wasm_file_buf = (uint8_t *)wasm_socket_recvfrom;
     wasm_file_size = sizeof(wasm_socket_recvfrom);
     allocate_benchmark("bench_socket_recvfrom", wasm_socket_recvfrom, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_FOPEN
+#include "fs_fopen.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_fopen;
+    wasm_file_size = sizeof(wasm_fs_fopen);
+    allocate_benchmark("bench_fs_fopen", wasm_fs_fopen, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_FWRITE
+#include "fs_fwrite.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_fwrite;
+    wasm_file_size = sizeof(wasm_fs_fwrite);
+    allocate_benchmark("bench_fs_fwrite", wasm_fs_fwrite, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_FREAD
+#include "fs_fread.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_fread;
+    wasm_file_size = sizeof(wasm_fs_fread);
+    allocate_benchmark("bench_fs_fread", wasm_fs_fread, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_FSEEK
+#include "fs_fseek.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_fseek;
+    wasm_file_size = sizeof(wasm_fs_fseek);
+    allocate_benchmark("bench_fs_fseek", wasm_fs_fseek, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_FCLOSE
+#include "fs_fclose.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_fclose;
+    wasm_file_size = sizeof(wasm_fs_fclose);
+    allocate_benchmark("bench_fs_fclose", wasm_fs_fclose, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_UNLINK
+#include "fs_unlink.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_unlink;
+    wasm_file_size = sizeof(wasm_fs_unlink);
+    allocate_benchmark("bench_fs_unlink", wasm_fs_unlink, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_MKDIR
+#include "fs_mkdir.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_mkdir;
+    wasm_file_size = sizeof(wasm_fs_mkdir);
+    allocate_benchmark("bench_fs_mkdir", wasm_fs_mkdir, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_RENAME
+#include "fs_rename.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_rename;
+    wasm_file_size = sizeof(wasm_fs_rename);
+    allocate_benchmark("bench_fs_rename", wasm_fs_rename, wasm_file_size);
+#endif
+
+#if BENCHMARK_FS_PERF
+#include "fs_perf.h"
+    wasm_file_buf = (uint8_t *)wasm_fs_perf;
+    wasm_file_size = sizeof(wasm_fs_perf);
+    allocate_benchmark("bench_fs_perf", wasm_fs_perf, wasm_file_size);
 #endif
 }

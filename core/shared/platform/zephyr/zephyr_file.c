@@ -657,16 +657,26 @@ os_renameat(os_file_handle old_handle, const char *old_path,
     struct zephyr_fs_desc *ptr = NULL;
     (void)new_handle; 
 
-    int rc = fs_rename(old_path, new_path);
+    char abs_old_path[MAX_FILE_NAME + 1];
+    char abs_new_path[MAX_FILE_NAME + 1];
+
+    snprintf(abs_old_path, MAX_FILE_NAME, "%s/%s", prestat_dir, old_path);
+    snprintf(abs_new_path, MAX_FILE_NAME, "%s/%s", prestat_dir, new_path);
+
+    int rc = fs_rename(abs_old_path, abs_new_path);
     if (rc < 0) {
         return convert_errno(-rc);
     }
 
     GET_FILE_SYSTEM_DESCRIPTOR(old_handle->fd, ptr);
 
+    free(ptr->path);
     ptr->path = strdup(new_path);
+    if(ptr->path == NULL) {
+        return __WASI_ENOMEM;
+    }
 
-    return __WASI_ENOSYS;
+    return __WASI_ESUCCESS;
 }
 
 __wasi_errno_t
@@ -674,15 +684,16 @@ os_unlinkat(os_file_handle handle, const char *path, bool is_dir){
     /* `old_handle` need to be the the fd of the file to unlink.
      * `path` need to be absolute, relative path will not be resolved.
      */
-
+    char abs_path[MAX_FILE_NAME + 1];
     struct zephyr_fs_desc *ptr = NULL;
-    // TODO: path to absolute 
+
+    snprintf(abs_path, MAX_FILE_NAME, "%s/%s", prestat_dir, path);
 
     if(is_dir){
         return __WASI_ENOTDIR;
     }
     
-    int rc = fs_unlink(path);
+    int rc = fs_unlink(abs_path);
     if (rc < 0) {
         return convert_errno(-rc);
     }
@@ -770,7 +781,7 @@ os_convert_stdout_handle(os_raw_file_handle raw_stdout){
     }
     struct zephyr_fs_desc *ptr = NULL;
 
-    /* We allocate a fake stdin reference */
+    /* We allocate a fake stdout reference */
     ptr = zephyr_fs_alloc_obj(false, "stdout", &handle->fd);
 
     handle->is_sock = false;
@@ -789,7 +800,7 @@ os_convert_stderr_handle(os_raw_file_handle raw_stderr){
     }
     struct zephyr_fs_desc *ptr = NULL;
 
-    /* We allocate a fake stdin reference */
+    /* We allocate a fake stderr reference */
     ptr = zephyr_fs_alloc_obj(false, "stderr", &handle->fd);
 
     handle->is_sock = false;

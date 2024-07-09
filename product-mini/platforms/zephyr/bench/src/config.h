@@ -97,4 +97,58 @@
     #define BENCHMARK_SOCKET_RECVFROM 0
 #endif
 
+#if ENABLE_BENCHMARK_FS_FOPEN
+    #define BENCHMARK_FS_FOPEN 1
+#else
+    #define BENCHMARK_FS_FOPEN 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_FWRITE
+    #define BENCHMARK_FS_FWRITE 1
+#else
+    #define BENCHMARK_FS_FWRITE 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_FREAD
+    #define BENCHMARK_FS_FREAD 1
+#else
+    #define BENCHMARK_FS_FREAD 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_FSEEK
+    #define BENCHMARK_FS_FSEEK 1
+#else
+    #define BENCHMARK_FS_FSEEK 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_FCLOSE
+    #define BENCHMARK_FS_FCLOSE 1
+#else
+    #define BENCHMARK_FS_FCLOSE 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_UNLINK
+    #define BENCHMARK_FS_UNLINK 1
+#else
+    #define BENCHMARK_FS_UNLINK 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_MKDIR
+    #define BENCHMARK_FS_MKDIR 1
+#else
+    #define BENCHMARK_FS_MKDIR 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_RENAME
+    #define BENCHMARK_FS_RENAME 1
+#else
+    #define BENCHMARK_FS_RENAME 0
+#endif
+
+#if ENABLE_BENCHMARK_FS_PERF
+    #define BENCHMARK_FS_PERF 1
+#else
+    #define BENCHMARK_FS_PERF 0
+#endif
+
 #endif /* CONFIG_H */

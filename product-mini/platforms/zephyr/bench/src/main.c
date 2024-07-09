@@ -11,10 +11,6 @@
 #include "bh_assert.h"
 #include "bh_log.h"
 #include "wasm_export.h"
-
-/* Include wasm module as a header */
-#include "ackermann.h"
-
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
@@ -164,11 +160,25 @@ bool load_and_run_bench(const Benchmark *benchmark) {
 
         /* Set the WASI context */
 #if WASM_ENABLE_LIBC_WASI != 0
-    #define ADDRESS_POOL_SIZE 1
-    const char *addr_pool[ADDRESS_POOL_SIZE] = {
-        "192.0.2.10/24"};
-
-    wasm_runtime_set_wasi_addr_pool(wasm_module, addr_pool, ADDRESS_POOL_SIZE);
+    #if BENCHMARK_FS_FOPEN \
+        || BENCHMARK_FS_FWRITE \
+        || BENCHMARK_FS_FREAD \
+        || BENCHMARK_FS_FSEEK \
+        || BENCHMARK_FS_FCLOSE \
+        || BENCHMARK_FS_UNLINK \
+        || BENCHMARK_FS_MKDIR \
+        || BENCHMARK_FS_RENAME \
+        || BENCHMARK_FS_PERF
+    #define DIR_LIST_SIZE 1
+        const char *dir_list[DIR_LIST_SIZE] = {
+            "/lfs",};
+        wasm_runtime_set_wasi_args(wasm_module, dir_list, DIR_LIST_SIZE, NULL, 0, NULL, 0, NULL, 0);
+    #else
+        #define ADDRESS_POOL_SIZE 1
+        const char *addr_pool[ADDRESS_POOL_SIZE] = {
+            "192.0.2.10/24"};
+        wasm_runtime_set_wasi_addr_pool(wasm_module, addr_pool, ADDRESS_POOL_SIZE);
+    #endif
 #endif /* WASM_ENABLE_LIBC_WASI */
 
     /* Instantiate the module */
@@ -233,6 +243,24 @@ int main(void)
 
     /* Initialize every benchmarks information in the benchmarks array*/
     initialize_benchmarks();
+
+#if WASM_ENABLE_LIBC_WASI != 0
+    #if BENCHMARK_FS_FOPEN \
+        || BENCHMARK_FS_FWRITE \
+        || BENCHMARK_FS_FREAD \
+        || BENCHMARK_FS_FSEEK \
+        || BENCHMARK_FS_FCLOSE \
+        || BENCHMARK_FS_UNLINK \
+        || BENCHMARK_FS_MKDIR \
+        || BENCHMARK_FS_RENAME \
+        || BENCHMARK_FS_PERF
+        rc = littlefs_mount(mountpoint);
+        if (rc < 0) {
+            LOG_ERR("FAIL: mounting %s: %d\n", mountpoint->mnt_point, rc);
+            return 0;
+        }
+    #endif
+#endif
 
 #if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
     init_args.mem_alloc_type = Alloc_With_Pool;

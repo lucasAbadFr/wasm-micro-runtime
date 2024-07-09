@@ -24,12 +24,23 @@ set(BENCHMARK_SUITE_CORE 0)
   set(BENCHMARK_NESTEDLOOP 0)
   set(BENCHMARK_DUMMY      0)
 
-set(BENCHMARK_SUITE_SOCKET 1)
+set(BENCHMARK_SUITE_SOCKET 0)
   set(BENCHMARK_SOCKET_CREATE       0)
   set(BENCHMARK_SOCKET_CONNECT      0)
   set(BENCHMARK_SOCKET_BIND         0)
   set(BENCHMARK_SOCKET_SENDTO       0)
-  set(BENCHMARK_SOCKET_RECVFROM     1)
+  set(BENCHMARK_SOCKET_RECVFROM     0)
+
+set(BENCHMARK_SUITE_FILESYSTEM 1)
+  set(BENCHMARK_FS_FOPEN       0)
+  set(BENCHMARK_FS_FWRITE      0)
+  set(BENCHMARK_FS_FREAD       0)
+  set(BENCHMARK_FS_FSEEK       0)
+  set(BENCHMARK_FS_FCLOSE      0)
+  set(BENCHMARK_FS_UNLINK      0)
+  set(BENCHMARK_FS_MKDIR       0)
+  set(BENCHMARK_FS_RENAME      0)
+  set(BENCHMARK_FS_PERF        1)
 
 # Set definitions based on benchmark variables for the parent scope
 set(BENCHMARK_DEFINITIONS
@@ -49,6 +60,15 @@ set(BENCHMARK_DEFINITIONS
   "-DENABLE_BENCHMARK_SOCKET_BIND=${BENCHMARK_SOCKET_BIND}"
   "-DENABLE_BENCHMARK_SOCKET_SENDTO=${BENCHMARK_SOCKET_SENDTO}"
   "-DENABLE_BENCHMARK_SOCKET_RECVFROM=${BENCHMARK_SOCKET_RECVFROM}"
+  "-DENABLE_BENCHMARK_FS_FOPEN=${BENCHMARK_FS_FOPEN}"
+  "-DENABLE_BENCHMARK_FS_FWRITE=${BENCHMARK_FS_FWRITE}"
+  "-DENABLE_BENCHMARK_FS_FREAD=${BENCHMARK_FS_FREAD}"
+  "-DENABLE_BENCHMARK_FS_FSEEK=${BENCHMARK_FS_FSEEK}"
+  "-DENABLE_BENCHMARK_FS_FCLOSE=${BENCHMARK_FS_FCLOSE}"
+  "-DENABLE_BENCHMARK_FS_UNLINK=${BENCHMARK_FS_UNLINK}"
+  "-DENABLE_BENCHMARK_FS_MKDIR=${BENCHMARK_FS_MKDIR}"
+  "-DENABLE_BENCHMARK_FS_RENAME=${BENCHMARK_FS_RENAME}"
+  "-DENABLE_BENCHMARK_FS_PERF=${BENCHMARK_FS_PERF}"
   PARENT_SCOPE
 )
 
@@ -80,7 +100,32 @@ add_benchmark_source(BENCHMARK_SOCKET_CONNECT socket_connect)
 add_benchmark_source(BENCHMARK_SOCKET_BIND socket_bind)
 add_benchmark_source(BENCHMARK_SOCKET_SENDTO socket_sendto)
 add_benchmark_source(BENCHMARK_SOCKET_RECVFROM socket_recvfrom)
+add_benchmark_source(BENCHMARK_FS_FOPEN fs_fopen)
+add_benchmark_source(BENCHMARK_FS_FWRITE fs_fwrite)
+add_benchmark_source(BENCHMARK_FS_FREAD fs_fread)
+add_benchmark_source(BENCHMARK_FS_FSEEK fs_fseek)
+add_benchmark_source(BENCHMARK_FS_FCLOSE fs_fclose)
+add_benchmark_source(BENCHMARK_FS_UNLINK fs_unlink)
+add_benchmark_source(BENCHMARK_FS_MKDIR fs_mkdir)
+add_benchmark_source(BENCHMARK_FS_RENAME fs_rename)
+add_benchmark_source(BENCHMARK_FS_PERF fs_perf)
 
+# Collect all benchmark object files
+set(BENCH_NATIVE_OBJECT "" CACHE INTERNAL "List of benchmark object files" )
+foreach(BENCHMARK ${BENCHMARK_LIST})
+  if(${BENCHMARK_SUITE_CORE})
+    list(APPEND BENCH_NATIVE_OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/core/native/${BENCHMARK}.o)
+  elseif(${BENCHMARK_SUITE_SOCKET})
+    list(APPEND BENCH_NATIVE_OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/socket/native/${BENCHMARK}.o)
+  elseif(${BENCHMARK_SUITE_FILESYSTEM})
+    list(APPEND BENCH_NATIVE_OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/filesystem/native/${BENCHMARK}.o)
+  endif()
+endforeach()
+
+# Set the benchmark object files to be used in the parent scope
+set(BENCH_NATIVE_OBJECT ${BENCH_NATIVE_OBJECT} PARENT_SCOPE)
+
+# Compilation:
 # Now, BENCHMARK_LIST contains all enabled benchmark source files
 # We can use this list to build the benchmarks
 # foreach(BENCHMARK ${BENCHMARK_LIST})
@@ -110,16 +155,3 @@ add_benchmark_source(BENCHMARK_SOCKET_RECVFROM socket_recvfrom)
 #     USES_TERMINAL
 #   )
 # endforeach()
-
-# Collect all benchmark object files
-set(BENCH_NATIVE_OBJECT "" CACHE INTERNAL "List of benchmark object files" )
-foreach(BENCHMARK ${BENCHMARK_LIST})
-  if(${BENCHMARK_SUITE_CORE})
-    list(APPEND BENCH_NATIVE_OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/core/native/${BENCHMARK}.o)
-  elseif(${BENCHMARK_SUITE_SOCKET})
-    list(APPEND BENCH_NATIVE_OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/socket/native/${BENCHMARK}.o)
-  endif()
-endforeach()
-
-# Set the benchmark object files to be used in the parent scope
-set(BENCH_NATIVE_OBJECT ${BENCH_NATIVE_OBJECT} PARENT_SCOPE)

@@ -28,7 +28,7 @@ SOURCE_DIRS = {
     "core": f"{WASM_APPS_DIR}/core/src",
     "socket": f"{WASM_APPS_DIR}/socket/src",
     "thread": f"{WASM_APPS_DIR}/thread/src",
-    "fileSystem": f"{WASM_APPS_DIR}/fileSystem/src"
+    "filesystem": f"{WASM_APPS_DIR}/filesystem/src"
 }
 
 OUTPUT_DIRS = {
@@ -44,9 +44,9 @@ OUTPUT_DIRS = {
         "wasm": f"{WASM_APPS_DIR}/thread/wasm",
         "native": f"{WASM_APPS_DIR}/thread/native",
     },
-    "fileSystem": {
-        "wasm": f"{WASM_APPS_DIR}/fileSystem/wasm",
-        "native": f"{WASM_APPS_DIR}/fileSystem/native",
+    "filesystem": {
+        "wasm": f"{WASM_APPS_DIR}/filesystem/wasm",
+        "native": f"{WASM_APPS_DIR}/filesystem/native",
     }
 }
 
@@ -73,7 +73,17 @@ BENCHMARKS = {
         "socket_sendto",
         "socket_recvfrom",
         ],
-    "fileSystem":[],
+    "filesystem":[
+        "fs_fopen",
+        "fs_fwrite",
+        "fs_fread",
+        "fs_fseek",
+        "fs_fclose",
+        "fs_unlink",
+        "fs_mkdir",
+        "fs_rename",
+        "fs_perf"
+        ],
 } 
 
 
@@ -98,6 +108,7 @@ class BenchmarkSuite(ABC):
 
     def convert_wasm_to_c_header(self, input_file, output_file, benchmark_name):
         # Ensure the input file exists
+        print(f"Building {benchmark_name}.h")
         
         if not os.path.isfile(input_file):
             print(f"Error: The file {input_file} does not exist.")
@@ -117,7 +128,6 @@ class BenchmarkSuite(ABC):
         with open(output_file, 'w') as header_file:
             header_file.write(output_content)
         
-        print(f"Conversion complete. Output saved to {output_file}")
 
 # Concrete class for core benchmark suite        
 class CoreSuite(BenchmarkSuite):
@@ -223,10 +233,6 @@ class SocketSuite(BenchmarkSuite):
         print(f"Building {benchmark_name}.o")
         COMMAND = [f"{ZEPHYR_ARM_EABI}/bin/arm-zephyr-eabi-gcc",
                 "-O2",
-                # "-DARCH=armv8-m.main",
-                # "-DBOARD=nucleo_h563zi",
-                # "-DCONFIG_ARM=y",
-                "-DCPU_CORTEX_M33=y",
                 f"-I{ZEPHYR_BASE}/include",
                 "-mcpu=cortex-m33", "-mthumb", "-mabi=aapcs", "-mtp=soft",
                 "-c",
@@ -249,10 +255,59 @@ class SocketSuite(BenchmarkSuite):
             os.remove(f"{INC_DIR}/wasi_socket_ext.o")
         if os.path.exists(f"{INC_DIR}/libwasi_socket_ext.a"):
             os.remove(f"{INC_DIR}/libwasi_socket_ext.a")
+            
+# Concrete class for filesystem benchmark suite
+class FilesystemSuite(BenchmarkSuite):
+    def __init__(self):
+        super().__init__("filesystem", SOURCE_DIRS["filesystem"], OUTPUT_DIRS["filesystem"])
+        
+    def build_wasm(self, benchmark_name):
+        print(f"Building {benchmark_name}.wasm")
+        COMMAND = [f"{CLANG_PATH}",
+               f"--sysroot={WASI_SYSROOT}",
+               "-nostdlib",
+               "-lc",
+               "-O2",
+               "-z",
+               "stack-size=8192",
+               "-Wl,--max-memory=65536",
+               "-Wl,--allow-undefined,--no-entry",
+               f"-Wl,--export=bench_{benchmark_name}",
+               "-o",
+               f"{self.output_dirs['wasm']}/{benchmark_name}.wasm",
+               f"{self.source_dir}/{benchmark_name}.c"]
+        try:
+            subprocess.run(COMMAND, check=True)
+        except  subprocess.CalledProcessError as e:
+            print(f"{e}")
+
+    def build_native(self, benchmark_name):
+        print(f"Building {benchmark_name}.o")
+        COMMAND = [f"{ZEPHYR_ARM_EABI}/bin/arm-zephyr-eabi-gcc",
+                "-O2",
+                "-mcpu=cortex-m33+nodsp+nofp", "-mthumb", "-mabi=aapcs", "-mtp=soft",
+                "-c",
+                "-o",
+                f"{self.output_dirs['native']}/{benchmark_name}.o",
+                f"{self.source_dir}/{benchmark_name}.c"]
+        try:
+            subprocess.run(COMMAND, check=True)
+        except  subprocess.CalledProcessError as e:
+            print(f"{e}")
+    
+    def clean(self, benchmark_name):
+        if os.path.exists(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm"):
+            os.remove(f"{self.output_dirs['wasm']}/{benchmark_name}.wasm")
+        if os.path.exists(f"{self.output_dirs['native']}/{benchmark_name}.o"):
+            os.remove(f"{self.output_dirs['native']}/{benchmark_name}.o")
+        if os.path.exists(f"{APP_SRC_DIR}/{benchmark_name}.h"):
+            os.remove(f"{APP_SRC_DIR}/{benchmark_name}.h")
 
 # Generic function to clean generated files
 def clean_generated_files(suite: BenchmarkSuite) -> None:
-    if isinstance(suite, CoreSuite) or isinstance(suite, SocketSuite):
+    if (isinstance(suite, CoreSuite) 
+        or isinstance(suite, SocketSuite)
+        or isinstance(suite, FilesystemSuite)):
         for benchmark in BENCHMARKS[suite.suite_name]:
             suite.clean(benchmark)
     else:
@@ -260,7 +315,9 @@ def clean_generated_files(suite: BenchmarkSuite) -> None:
 
 # Generic function to build benchmarks
 def build_benchmarks(suite: BenchmarkSuite) -> None:
-    if isinstance(suite, CoreSuite) or isinstance(suite, SocketSuite):
+    if (isinstance(suite, CoreSuite) 
+        or isinstance(suite, SocketSuite)
+        or isinstance(suite, FilesystemSuite)):
         for benchmark in BENCHMARKS[suite.suite_name]:
             suite.build_wasm(benchmark)
             suite.build_native(benchmark)
@@ -279,6 +336,7 @@ def parse_arguments():
     parser.add_argument('--clean', action='store_true', help='Clean generated files for the selected suite')
     return parser.parse_args()  
 
+# main code
 if __name__ == "__main__":
     args = parse_arguments()
     selected_suite = args.suite
@@ -297,9 +355,9 @@ if __name__ == "__main__":
         socket_suite = SocketSuite()
         if args.clean:
             clean_generated_files(socket_suite)
-            print("Cleaned core suite generated files.")
+            print("Cleaned socket suite generated files.")
         else:
-            print("Build core suite.")
+            print("Build socker suite.")
             socket_suite.build_static_lib()
             build_benchmarks(socket_suite)
             print("Build complete.")
@@ -309,7 +367,13 @@ if __name__ == "__main__":
         print("Unsupported suite name.")
         pass
     elif selected_suite == "filesystem":
-        print("Unsupported suite name.")
-        pass
+        fs_suite = FilesystemSuite()
+        if args.clean:
+            clean_generated_files(fs_suite)
+            print("Cleaned filesystem suite generated files.")
+        else:
+            print("Build filesystem suite.")
+            build_benchmarks(fs_suite)
+            print("Build complete.")
     else:
         print("Invalid suite name.")
