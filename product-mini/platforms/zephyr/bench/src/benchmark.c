@@ -53,11 +53,11 @@ static uint64_t native_bench_end_time = 0;
 
 /* function to ensure compatibility */
 void bench_start(void){
-    native_bench_start_time = k_cycle_get_64(); 
+    native_bench_start_time = k_cycle_get_32(); 
 }
 
 void bench_end(void){
-    native_bench_end_time = k_cycle_get_64();
+    native_bench_end_time = k_cycle_get_32();
 }
 
 void reset_times(){
@@ -67,6 +67,23 @@ void reset_times(){
 
 //-------------------------------------------------------------------------------------------//
 void benchmark_banner(void){
+#if BENCHMARK_FS    
+    printk("\t - fs_fopen :              %s\n", BENCHMARK_FS_FOPEN ? "YES" : "NO");
+    printk("\t - fs_fwrite :             %s\n", BENCHMARK_FS_FWRITE ? "YES" : "NO");
+    printk("\t - fs_fread :              %s\n", BENCHMARK_FS_FREAD ? "YES" : "NO");
+    printk("\t - fs_fseek :              %s\n", BENCHMARK_FS_FSEEK ? "YES" : "NO");
+    printk("\t - fs_fclose :             %s\n", BENCHMARK_FS_FCLOSE ? "YES" : "NO");
+    printk("\t - fs_unlink :             %s\n", BENCHMARK_FS_UNLINK ? "YES" : "NO");
+    printk("\t - fs_mkdir :              %s\n", BENCHMARK_FS_MKDIR ? "YES" : "NO");
+    printk("\t - fs_rename :             %s\n", BENCHMARK_FS_RENAME ? "YES" : "NO");
+    printk("\t - fs_perf :               %s\n", BENCHMARK_FS_PERF ? "YES" : "NO");
+#elif BENCHMARK_SOCKET
+    printk("\t - socket_create :         %s\n", BENCHMARK_SOCKET_CREATE ? "YES" : "NO");
+    printk("\t - socket_connect :        %s\n", BENCHMARK_SOCKET_CONNECT ? "YES" : "NO");
+    printk("\t - socket_bind :           %s\n", BENCHMARK_SOCKET_BIND ? "YES" : "NO");
+    printk("\t - socket_sendto :         %s\n", BENCHMARK_SOCKET_SENDTO ? "YES" : "NO");
+    printk("\t - socket_recvfrom :       %s\n", BENCHMARK_SOCKET_RECVFROM ? "YES" : "NO");
+#else
     printk("[INFO] Performing benchmarks:\n");
     printk("\t - ackermann :             %s\n", BENCHMARK_ACKERMANN ? "YES" : "NO");
     printk("\t - base64 :                %s\n", BENCHMARK_BASE64 ? "YES" : "NO");
@@ -79,20 +96,7 @@ void benchmark_banner(void){
     printk("\t - heapsort (unsupported): %s\n", BENCHMARK_HEAPSORT ? "YES" : "NO");
     printk("\t - nestedloop :            %s\n", BENCHMARK_NESTEDLOOP ? "YES" : "NO");
     printk("\t - dummy :                 %s\n", BENCHMARK_DUMMY ? "YES" : "NO");
-    printk("\t - socket_create :         %s\n", BENCHMARK_SOCKET_CREATE ? "YES" : "NO");
-    printk("\t - socket_connect :        %s\n", BENCHMARK_SOCKET_CONNECT ? "YES" : "NO");
-    printk("\t - socket_bind :           %s\n", BENCHMARK_SOCKET_BIND ? "YES" : "NO");
-    printk("\t - socket_sendto :         %s\n", BENCHMARK_SOCKET_SENDTO ? "YES" : "NO");
-    printk("\t - socket_recvfrom :       %s\n", BENCHMARK_SOCKET_RECVFROM ? "YES" : "NO");
-    printk("\t - fs_fopen :              %s\n", BENCHMARK_FS_FOPEN ? "YES" : "NO");
-    printk("\t - fs_fwrite :             %s\n", BENCHMARK_FS_FWRITE ? "YES" : "NO");
-    printk("\t - fs_fread :              %s\n", BENCHMARK_FS_FREAD ? "YES" : "NO");
-    printk("\t - fs_fseek :              %s\n", BENCHMARK_FS_FSEEK ? "YES" : "NO");
-    printk("\t - fs_fclose :             %s\n", BENCHMARK_FS_FCLOSE ? "YES" : "NO");
-    printk("\t - fs_unlink :             %s\n", BENCHMARK_FS_UNLINK ? "YES" : "NO");
-    printk("\t - fs_mkdir :              %s\n", BENCHMARK_FS_MKDIR ? "YES" : "NO");
-    printk("\t - fs_rename :             %s\n", BENCHMARK_FS_RENAME ? "YES" : "NO");
-    printk("\t - fs_perf :               %s\n", BENCHMARK_FS_PERF ? "YES" : "NO");
+#endif
 }
 
 //-------------------------------------------------------------------------------------------//

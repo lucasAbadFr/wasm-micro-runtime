@@ -111,12 +111,18 @@ static int littlefs_mount(struct fs_mount_t *mp)
 static uint64_t wasm_bench_start_time = 0;
 static uint64_t wasm_bench_end_time = 0;
 
+__attribute__((noinline))
 void wasm_bench_start(wasm_exec_env_t exec_env){
-    wasm_bench_start_time =  k_cycle_get_64(); 
+    printk("[DEBUG] measure start time\n");
+    wasm_bench_start_time =  k_cycle_get_32();
+    __asm__ volatile(""); // Acts as a compiler barrier
 }
 
+__attribute__((noinline))
 void wasm_bench_end(wasm_exec_env_t exec_env){
-    wasm_bench_end_time =  k_cycle_get_64();
+    __asm__ volatile(""); // Acts as a compiler barrier
+    wasm_bench_end_time =  k_cycle_get_32();
+    printk("[DEBUG] measure end time\n");
 }
 
 void wasm_reset_times(){
@@ -160,20 +166,12 @@ bool load_and_run_bench(const Benchmark *benchmark) {
 
         /* Set the WASI context */
 #if WASM_ENABLE_LIBC_WASI != 0
-    #if BENCHMARK_FS_FOPEN \
-        || BENCHMARK_FS_FWRITE \
-        || BENCHMARK_FS_FREAD \
-        || BENCHMARK_FS_FSEEK \
-        || BENCHMARK_FS_FCLOSE \
-        || BENCHMARK_FS_UNLINK \
-        || BENCHMARK_FS_MKDIR \
-        || BENCHMARK_FS_RENAME \
-        || BENCHMARK_FS_PERF
+    #if BENCHMARK_FS
     #define DIR_LIST_SIZE 1
         const char *dir_list[DIR_LIST_SIZE] = {
             "/lfs",};
         wasm_runtime_set_wasi_args(wasm_module, dir_list, DIR_LIST_SIZE, NULL, 0, NULL, 0, NULL, 0);
-    #else
+    #elif BENCHMARK_SOCKET
         #define ADDRESS_POOL_SIZE 1
         const char *addr_pool[ADDRESS_POOL_SIZE] = {
             "192.0.2.10/24"};
@@ -245,15 +243,7 @@ int main(void)
     initialize_benchmarks();
 
 #if WASM_ENABLE_LIBC_WASI != 0
-    #if BENCHMARK_FS_FOPEN \
-        || BENCHMARK_FS_FWRITE \
-        || BENCHMARK_FS_FREAD \
-        || BENCHMARK_FS_FSEEK \
-        || BENCHMARK_FS_FCLOSE \
-        || BENCHMARK_FS_UNLINK \
-        || BENCHMARK_FS_MKDIR \
-        || BENCHMARK_FS_RENAME \
-        || BENCHMARK_FS_PERF
+    #if BENCHMARK_FS
         rc = littlefs_mount(mountpoint);
         if (rc < 0) {
             LOG_ERR("FAIL: mounting %s: %d\n", mountpoint->mnt_point, rc);
@@ -290,6 +280,8 @@ int main(void)
     for (int i = 0; i <= bench_nb; ++i) { 
         if(benchmarks[i].func_name != NULL){
             if(load_and_run_bench(&benchmarks[i])){
+                printk("[%s] start: %llu ticks\n", benchmarks[i].func_name + 6, wasm_bench_start_time);
+                printk("[%s] end: %llu ticks\n", benchmarks[i].func_name + 6, wasm_bench_end_time);
                 printk("[%s] elapsed: %llu ticks\n", benchmarks[i].func_name + 6, (wasm_bench_end_time - wasm_bench_start_time));
                 wasm_reset_times();
                 deallocate_benchmark(&benchmarks[i]); // Deallocate the benchmark
