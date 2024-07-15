@@ -35,3 +35,15 @@ To run the benchmarks `sendto` and `recvfrom` we need to adjust memory usage:
     +define CONFIG_APP_HEAP_SIZE 8192 // 8KB 
     ```
 
+The results we observed were the followings:
+| bench | wasm | native | r  |
+| :------: | --------: | --------: | ----: |
+| create   | 861611    | 220019    | 3.92  |
+| connect  | 73680354  | 37120399  | 1.98  |
+| bind     | 931049    | 27744     | 33.56 |
+| sendto   | 1578943   | 577384    | 2.73  |
+| recvfrom | 432538833 | 160295187 | 2.70  |
+
+We can see that appart from the `bind` benchmark the wasm is between 2 and 4 slower than native. Also the `connect`, `sendto` and `recvfrom` are subject to the network latency and the server load.
+
+The `bind` benchmark is the most interesting as it is the only one where the ratio is above 10. This is due to the fact that the `bind` is a local operation and the overhead is due to the `wasi-libc` and runtime implementation.
