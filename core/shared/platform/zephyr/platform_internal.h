@@ -177,8 +177,7 @@ set_exec_mem_alloc_func(exec_mem_alloc_func_t alloc_func,
 
 /* The below types are used in platform_api_extension.h,
    we just define them to make the compiler happy */
-// typedef int os_file_handle;
-typedef int os_dir_stream; 
+typedef int os_dir_stream;
 typedef int os_raw_file_handle;
 
 // handle for file system descriptor
@@ -201,13 +200,14 @@ typedef struct zephyr_handle {
 typedef struct zephyr_handle *os_file_handle;
 #define bh_socket_t zephyr_handle *
 
-
-/*********************************************************/
-// Try to stub POSIX implementation in sandboxed env.
-
 typedef struct zsock_pollfd os_poll_file_handle;
 typedef unsigned int os_nfds_t;
 
+// Some of these definitions will throw warning for macros
+// redefinition if CONFIG_POSIX_API=y, but it's fine.
+// Warning: the CONFIG_POSIX_API will surely be deprecated and
+// split into more macros, so we may use some ifdefs to avoid
+// the warning in the future.
 #define POLLIN ZSOCK_POLLIN
 #define POLLPRI ZSOCK_POLLPRI
 #define POLLOUT ZSOCK_POLLOUT
@@ -231,8 +231,6 @@ typedef struct {
 //     k_yield();
 //     return 0;
 // }
-
-/*********************************************************/
 
 static inline os_file_handle
 os_get_invalid_handle() {

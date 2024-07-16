@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2024 Grenoble INP - ESISAR.  All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ */
+
 #include "platform_api_extension.h"
 #include "libc_errno.h"
 
@@ -657,7 +662,13 @@ os_renameat(os_file_handle old_handle, const char *old_path,
     struct zephyr_fs_desc *ptr = NULL;
     (void)new_handle; 
 
-    int rc = fs_rename(old_path, new_path);
+    char abs_old_path[MAX_FILE_NAME + 1];
+    char abs_new_path[MAX_FILE_NAME + 1];
+
+    snprintf(abs_old_path, MAX_FILE_NAME, "%s/%s", prestat_dir, old_path);
+    snprintf(abs_new_path, MAX_FILE_NAME, "%s/%s", prestat_dir, new_path);
+
+    int rc = fs_rename(abs_old_path, abs_new_path);
     if (rc < 0) {
         return convert_errno(-rc);
     }
@@ -674,9 +685,10 @@ os_unlinkat(os_file_handle handle, const char *path, bool is_dir){
     /* `old_handle` need to be the the fd of the file to unlink.
      * `path` need to be absolute, relative path will not be resolved.
      */
-
+    char abs_path[MAX_FILE_NAME + 1];
     struct zephyr_fs_desc *ptr = NULL;
-    // TODO: path to absolute 
+    
+    snprintf(abs_path, MAX_FILE_NAME, "%s/%s", prestat_dir, path);
 
     if(is_dir){
         return __WASI_ENOTDIR;

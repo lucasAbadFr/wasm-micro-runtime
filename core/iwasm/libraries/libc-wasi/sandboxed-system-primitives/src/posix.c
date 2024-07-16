@@ -22,7 +22,6 @@
 #include "refcount.h"
 #include "rights.h"
 #include "str.h"
-#include "assert.h"
 
 /* Some platforms (e.g. Windows) already define `min()` macro.
  We're undefing it here to make sure the `min` call does exactly
@@ -431,15 +430,15 @@ fd_table_attach(struct fd_table *ft, __wasi_fd_t fd, struct fd_object *fo,
                 __wasi_rights_t rights_base, __wasi_rights_t rights_inheriting)
     REQUIRES_EXCLUSIVE(ft->lock) CONSUMES(fo->refcount)
 {
-    assert(ft->size > fd && "File descriptor table too small");
+    bh_assert(ft->size > fd && "File descriptor table too small");
     struct fd_entry *fe = &ft->entries[fd];
-    assert(fe->object == NULL
+    bh_assert(fe->object == NULL
            && "Attempted to overwrite an existing descriptor");
     fe->object = fo;
     fe->rights_base = rights_base;
     fe->rights_inheriting = rights_inheriting;
     ++ft->used;
-    assert(ft->size >= ft->used * 2 && "File descriptor too full");
+    bh_assert(ft->size >= ft->used * 2 && "File descriptor too full");
 }
 
 // Detaches a file descriptor from the file descriptor table.
@@ -447,12 +446,12 @@ static void
 fd_table_detach(struct fd_table *ft, __wasi_fd_t fd, struct fd_object **fo)
     REQUIRES_EXCLUSIVE(ft->lock) PRODUCES((*fo)->refcount)
 {
-    assert(ft->size > fd && "File descriptor table too small");
+    bh_assert(ft->size > fd && "File descriptor table too small");
     struct fd_entry *fe = &ft->entries[fd];
     *fo = fe->object;
-    assert(*fo != NULL && "Attempted to detach nonexistent descriptor");
+    bh_assert(*fo != NULL && "Attempted to detach nonexistent descriptor");
     fe->object = NULL;
-    assert(ft->used > 0 && "Reference count mismatch");
+    bh_assert(ft->used > 0 && "Reference count mismatch");
     --ft->used;
 }
 
@@ -577,6 +576,7 @@ fd_table_insert_existing(struct fd_table *ft, __wasi_fd_t in,
     __wasi_rights_t rights_base = 0, rights_inheriting = 0;
     struct fd_object *fo;
     __wasi_errno_t error;
+
     error =
         fd_determine_type_rights(out, &type, &rights_base, &rights_inheriting);
     if (error != 0) {
@@ -621,7 +621,7 @@ fd_table_insert_existing(struct fd_table *ft, __wasi_fd_t in,
 static __wasi_errno_t
 fd_table_unused(struct fd_table *ft, __wasi_fd_t *out) REQUIRES_SHARED(ft->lock)
 {
-    assert(ft->size > ft->used && "File descriptor table has no free slots");
+    bh_assert(ft->size > ft->used && "File descriptor table has no free slots");
     for (;;) {
         uintmax_t random_fd = 0;
         __wasi_errno_t error = random_uniform(ft->size, &random_fd);
@@ -651,7 +651,7 @@ fd_table_insert(wasm_exec_env_t exec_env, struct fd_table *ft,
         fd_object_release(exec_env, fo);
         return convert_errno(errno);
     }
-    
+
     __wasi_errno_t error = fd_table_unused(ft, out);
 
     if (error != __WASI_ESUCCESS)
@@ -677,7 +677,7 @@ fd_table_insert_fd(wasm_exec_env_t exec_env, struct fd_table *ft,
         os_close(in, false);
         return error;
     }
-    
+
     fo->file_handle = in;
     if (type == __WASI_FILETYPE_DIRECTORY) {
         if (!mutex_init(&fo->directory.lock)) {
@@ -2420,7 +2420,7 @@ wasi_addr_to_string(const __wasi_addr_t *addr, char *buf, size_t buflen)
     if (addr->kind == IPv4) {
         const char *format = "%u.%u.%u.%u";
 
-        assert(buflen >= 16);
+        bh_assert(buflen >= 16);
 
         snprintf(buf, buflen, format, addr->addr.ip4.addr.n0,
                  addr->addr.ip4.addr.n1, addr->addr.ip4.addr.n2,
@@ -2432,7 +2432,7 @@ wasi_addr_to_string(const __wasi_addr_t *addr, char *buf, size_t buflen)
         const char *format = "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x";
         __wasi_addr_ip6_t ipv6 = addr->addr.ip6.addr;
 
-        assert(buflen >= 40);
+        bh_assert(buflen >= 40);
 
         snprintf(buf, buflen, format, ipv6.n0, ipv6.n1, ipv6.n2, ipv6.n3,
                  ipv6.h0, ipv6.h1, ipv6.h2, ipv6.h3);
@@ -2536,12 +2536,10 @@ wasi_ssp_sock_connect(wasm_exec_env_t exec_env, struct fd_table *curfds,
     __wasi_errno_t error;
     int ret;
 
-    /* Receive address and port in network order */
     if (!wasi_addr_to_string(addr, buf, sizeof(buf))) {
         return __WASI_EPROTONOSUPPORT;
     }
 
-    /* Consume in network order */
     if (!addr_pool_search(addr_pool, buf)) {
         return __WASI_EACCES;
     }
@@ -2552,8 +2550,8 @@ wasi_ssp_sock_connect(wasm_exec_env_t exec_env, struct fd_table *curfds,
     
     /* Consume __wasi_addr_t */
     ret = blocking_op_socket_connect(exec_env, fo->file_handle, buf,
-                                     addr->kind == IPv4 ?  addr->addr.ip4.port
-                                                        :  addr->addr.ip6.port);
+                                     addr->kind == IPv4 ? addr->addr.ip4.port
+                                                        : addr->addr.ip6.port);
     fd_object_release(exec_env, fo);
     if (BHT_OK != ret) {
         return convert_errno(errno);
@@ -2699,10 +2697,10 @@ wasi_ssp_sock_open(wasm_exec_env_t exec_env, struct fd_table *curfds,
     }
 
     if (SOCKET_DGRAM == socktype) {
-        assert(wasi_type == __WASI_FILETYPE_SOCKET_DGRAM);
+        bh_assert(wasi_type == __WASI_FILETYPE_SOCKET_DGRAM);
     }
     else {
-        assert(wasi_type == __WASI_FILETYPE_SOCKET_STREAM);
+        bh_assert(wasi_type == __WASI_FILETYPE_SOCKET_STREAM);
     }
 
     // TODO: base rights and inheriting rights ?
@@ -2879,12 +2877,10 @@ wasmtime_ssp_sock_send_to(wasm_exec_env_t exec_env, struct fd_table *curfds,
     __wasi_addr_t dest_addr_copy; 
     bh_memcpy_s(&dest_addr_copy, sizeof(__wasi_addr_t), dest_addr, sizeof(__wasi_addr_t));
 
-    /* Receive address and port in network order */
     if (!wasi_addr_to_string(&dest_addr_copy, addr_buf, sizeof(addr_buf))) {
         return __WASI_EPROTONOSUPPORT;
     }
 
-    /* Consume network order */
     if (!addr_pool_search(addr_pool, addr_buf)) {
         return __WASI_EACCES;
     }
@@ -3115,7 +3111,6 @@ compare_address(const struct addr_pool *addr_pool_entry,
     size_t addr_size;
     uint8_t max_addr_mask;
 
-    // endianes problem here ?
     if (addr_pool_entry->type == IPv4) {
         uint32_t addr_ip4 = htonl(addr_pool_entry->addr.ip4);
         bh_memcpy_s(basebuf, sizeof(addr_ip4), &addr_ip4, sizeof(addr_ip4));

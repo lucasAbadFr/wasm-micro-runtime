@@ -3384,7 +3384,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
     wasi_ctx->env_list = env_list;
     wasi_ctx->ns_lookup_buf = ns_lookup_buf;
     wasi_ctx->ns_lookup_list = ns_lookup_list;
-    
+
     return true;
 
 fail:

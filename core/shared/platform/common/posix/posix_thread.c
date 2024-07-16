@@ -337,7 +337,6 @@ int
 os_rwlock_init(korp_rwlock *lock)
 {
     assert(lock);
-    os_printf("[OS] in os_rwlock_init\n");
 
     if (pthread_rwlock_init(lock, NULL) != BHT_OK)
         return BHT_ERROR;

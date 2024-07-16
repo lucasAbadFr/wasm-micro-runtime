@@ -107,47 +107,6 @@ static int littlefs_mount(struct fs_mount_t *mp)
 }
 
 //-------------------------------------------------------------------------------------------//
-// https://github.com/bytecodealliance/wasm-micro-runtime/issues/1659
-// typedef char *_va_list;
-// #define _INTSIZEOF(n) (((uint32)sizeof(n) + 3) & (uint32)~3)
-// #define _va_arg(ap, t) (*(t *)((ap += _INTSIZEOF(t)) - _INTSIZEOF(t))) 
-
-void my_printf(wasm_exec_env_t exec_env, const char *txt, int err)
-{
-    // wasm_module_inst_t module_inst = get_module_inst(exec_env);
-    // if (!wasm_runtime_validate_native_addr(module_inst, va_args, sizeof(int32))){
-    //     LOG_ERR("Invalid va_args\n");
-    //     return;
-    // }
-        os_printf("[wasm] %s %d\n", txt, err);
-        // os_printf("[wasm] %s hexa %02x\n", txt, err);
-}
-
-void print_memory_around_fd(int fd) {
-    uint8_t* fd_ptr = (uint8_t*)&fd;
-
-    os_printf("Memory around fd:\n");
-    for (int i = -16; i <= 16; i++) {
-        os_printf("%p: %02x\n", fd_ptr + i, *(fd_ptr + i));
-    }
-}
-
-
-static NativeSymbol native_symbols[] =
-{
-    {
-        "my_printf", 		  // the name of WASM function name
-     	my_printf,            // the native function pointer
-        "($i)"		          // the function prototype signature
-    },
-    {
-        "print_memory_around_fd", // the name of WASM function name
-        print_memory_around_fd,   // the native function pointer
-        "(i)"                     // the function prototype signature
-    }
-};
-
-//-------------------------------------------------------------------------------------------//
 int main(void)
 {
     int start, end;
@@ -160,9 +119,6 @@ int main(void)
     char error_buf[128];
     const char *exception;
     int rc;
-    // wasm_function_inst_t func;
-    // wasm_exec_env_t exec_env;
-    // unsigned argv[2] = { 0 };
 
     int log_verbose_level = 2;
 
@@ -173,10 +129,6 @@ int main(void)
         LOG_ERR("FAIL: mounting %s: %d\n", mountpoint->mnt_point, rc);
 		return 0;
 	}
-
-    LOG_INF("stdin = %d", STDIN_FILENO);
-    LOG_INF("stdout = %d", STDOUT_FILENO);
-    LOG_INF("stderr = %d", STDERR_FILENO);
 
 #if WASM_ENABLE_GLOBAL_HEAP_POOL != 0
     init_args.mem_alloc_type = Alloc_With_Pool;
@@ -191,14 +143,6 @@ int main(void)
     if (!wasm_runtime_full_init(&init_args)) {
         LOG_ERR("Init runtime environment failed.");
         return;
-    }
-
-    /* register native function */
-    int n_native_symbols = sizeof(native_symbols) / sizeof(NativeSymbol);
-    if (!wasm_runtime_register_natives("env",
-                                   native_symbols,
-                                   n_native_symbols)){
-        LOG_ERR("Register natives failed.");
     }
 
     /* load WASM byte buffer from byte buffer of include file */
@@ -218,7 +162,6 @@ int main(void)
 #define DIR_LIST_SIZE 1
     const char *dir_list[DIR_LIST_SIZE] = {
         "/lfs",
-        // Add more dir here if needed
     };
     /* No dir list => No file system 
      * dir_cont = 0
@@ -230,7 +173,6 @@ int main(void)
      * argv  0 
      */
     wasm_runtime_set_wasi_args(wasm_module, dir_list, DIR_LIST_SIZE, NULL, 0, NULL, 0, NULL, 0);
-    // wasm_runtime_set_wasi_args(wasm_module, NULL, 0, NULL, 0, NULL, 0, NULL, 0);
 #endif
 
     /* instantiate the module */
@@ -242,7 +184,6 @@ int main(void)
     }
 
     /* invoke the main function */
-    // if ((func = wasm_runtime_lookup_function(wasm_module_inst, "_start"))) {
     if (wasm_runtime_lookup_function(wasm_module_inst, "_start")
         || wasm_runtime_lookup_function(wasm_module_inst, "__main_argc_argv")
         || wasm_runtime_lookup_function(wasm_module_inst, "main")) {
