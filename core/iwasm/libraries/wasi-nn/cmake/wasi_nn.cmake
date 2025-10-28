@@ -11,6 +11,7 @@ set(WASI_NN_SOURCES
   ${WASI_NN_ROOT}/src/utils/wasi_nn_app_native.c
 )
 include_directories(${WASI_NN_ROOT}/include)
+
 add_compile_definitions(
   $<$<CONFIG:Debug>:NN_LOG_LEVEL=0>
   $<$<CONFIG:Release>:NN_LOG_LEVEL=2>
@@ -130,3 +131,24 @@ if(WAMR_BUILD_WASI_NN_ONNX EQUAL 1)
 
   install(TARGETS wasi_nn_onnx DESTINATION lib)
 endif()
+
+# - TensorFlow Lite Micro (Zephyr)
+if (WAMR_BUILD_WASI_NN_TFLM EQUAL 1)
+  message(STATUS "Including WASI-NN backend: TensorFlow Lite Micro (Zephyr)")
+
+  enable_language(CXX)
+
+  list(APPEND WASI_NN_BACKEND_SOURCES
+    ${WASI_NN_ROOT}/src/wasi_nn_tflm.cpp
+  )
+
+  include_directories(
+    ${ZEPHYR_BASE}/modules/lib/tflite-micro/tensorflow/lite/micro
+  )
+
+endif()
+
+set(WASI_NN_SOURCES_ALL
+  ${WASI_NN_SOURCES}
+  ${WASI_NN_BACKEND_SOURCES}
+)

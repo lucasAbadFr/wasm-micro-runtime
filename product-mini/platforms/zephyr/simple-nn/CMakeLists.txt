@@ -87,7 +87,7 @@ set(WAMR_SDK_PACKAGE_OUT_DIR
 # CMake scripts dependencies
 #------------------------------------------------------------------------------
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
-# include (${WAMR_ROOT_DIR}/core/iwasm/libraries/wasi-nn/cmake/wasi_nn.cmake)   
+include (${WAMR_ROOT_DIR}/core/iwasm/libraries/wasi-nn/cmake/wasi_nn.cmake)
 
 
 
@@ -98,6 +98,7 @@ include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 # Build the WAMR runtime 
 target_sources(app PRIVATE
                ${WAMR_RUNTIME_LIB_SOURCE}
+               ${WASI_NN_SOURCES_ALL}
                src/main.c)
 
 # Link libraries like in samples.
