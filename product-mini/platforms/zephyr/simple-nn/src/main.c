@@ -20,7 +20,7 @@
 #include <zephyr/net/http/client.h>
 
 /* Hello World WASM module */
-#include "test_wasm.h"
+#include "wasi_nn_module.h"
 
 #define CONFIG_HEAP_MEM_POOL_SIZE WASM_GLOBAL_HEAP_SIZE
 #define CONFIG_APP_STACK_SIZE 8192
@@ -64,8 +64,8 @@ main(void)
 
 
     /* load WASM byte buffer from byte buffer of include file */
-    wasm_file_buf  = (uint8 *)wasm_test_file;
-    wasm_file_size = sizeof(wasm_test_file);
+    wasm_file_buf  = (uint8 *)wasi_nn_module_wasm;
+    wasm_file_size = wasi_nn_module_wasm_len;
     LOG_INF("Wasm file size: %d\n", wasm_file_size);
 
     /* load WASM module */

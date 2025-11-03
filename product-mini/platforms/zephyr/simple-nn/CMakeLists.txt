@@ -21,11 +21,23 @@ set (WAMR_BUILD_LIBC_BUILTIN 1) # printf
 set (WAMR_BUILD_LIBC_WASI 1)
 set (WAMR_BUILD_LIB_PTHREAD 0)
 set (WAMR_BUILD_GLOBAL_HEAP_POOL 1)
-set (WAMR_BUILD_GLOBAL_HEAP_SIZE 98304) # 96 KB
+set (WAMR_BUILD_GLOBAL_HEAP_SIZE 131072) # 128 KB
 
 # Experimental:
 set (WAMR_BUILD_WASI_EPHEMERAL_NN 1)
 set (WAMR_BUILD_WASI_NN_TFLM 1)         # New definition
+
+
+# Strangely the modules seem to use ref types. 
+#
+# Serial terminal output:
+#
+#     Failed to load module: WASM module load failed: zero byte expected.
+#     The module uses reference types feature which is disabled in the runtime
+#
+#  
+set (WAMR_BUILD_REF_TYPES 1)
+
 
 # WAMR_BUILD_WASI_NN_ENABLE_GPU - default to disable if not set
 
