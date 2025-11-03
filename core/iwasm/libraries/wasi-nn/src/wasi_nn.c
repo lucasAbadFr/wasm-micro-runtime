@@ -10,7 +10,13 @@
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
-#include <dlfcn.h>
+#ifndef BH_PLATFORM_ZEPHYR
+#   include <dlfcn.h>
+#endif
+/*
+ * Instead of Zephyr may use BH_HAS_DLFCN
+ */
+
 
 #include "wasi_nn_private.h"
 #include "utils/wasi_nn_app_native.h"
@@ -34,6 +40,22 @@
 #define OPENVINO_BACKEND_LIB "libwasi_nn_openvino" LIB_EXTENTION
 #define LLAMACPP_BACKEND_LIB "libwasi_nn_llamacpp" LIB_EXTENTION
 #define ONNX_BACKEND_LIB "libwasi_nn_onnx" LIB_EXTENTION
+
+
+#ifdef BH_PLATFORM_ZEPHYR
+/*
+ * Import backend API symbols as extern.
+ *
+ * We don't need to search them inside a dynamic lib because they are in the executable.
+ */
+extern wasi_nn_error init_backend(void **);
+extern wasi_nn_error deinit_backend(void *);
+extern wasi_nn_error load(void *, graph_builder_array *, graph_encoding, execution_target, graph *);
+extern wasi_nn_error init_execution_context(void *, graph, graph_execution_context *);
+extern wasi_nn_error set_input(void *, graph_execution_context, uint32_t, tensor *);
+extern wasi_nn_error compute(void *, graph_execution_context);
+extern wasi_nn_error get_output(void *, graph_execution_context, uint32_t, tensor_data *, uint32_t *);
+#endif
 
 /* Global variables */
 static korp_mutex wasi_nn_lock;
@@ -190,7 +212,9 @@ wasi_nn_destroy()
     // close backends' libraries and registered functions
     for (unsigned i = 0; i < sizeof(lookup) / sizeof(lookup[0]); i++) {
         if (lookup[i].backend_handle) {
+#ifndef BH_PLATFORM_ZEPHYR            
             dlclose(lookup[i].backend_handle);
+#endif 
             lookup[i].backend_handle = NULL;
         }
 
@@ -212,6 +236,11 @@ static graph_encoding
 choose_a_backend()
 {
     void *handle;
+
+#ifdef BH_PLATFORM_ZEPHYR  
+    NN_INFO_PRINTF("Zephyr - using TensorFlow Lite backend placeholder");
+    return tensorflowlite;
+#else
 
     handle = dlopen(LLAMACPP_BACKEND_LIB, RTLD_LAZY);
     if (handle) {
@@ -257,6 +286,8 @@ choose_a_backend()
     NN_WARN_PRINTF("%s", dlerror());
 #endif
 
+#endif /* BH_PLATFORM_ZEPHYR*/
+
     NN_WARN_PRINTF("No backend found");
     return unknown_backend;
 }
@@ -264,6 +295,19 @@ choose_a_backend()
 static bool
 register_backend(void *handle, api_function *functions)
 {
+#ifdef BH_PLATFORM_ZEPHYR  
+    NN_INFO_PRINTF("Zephyr - using TensorFlow Lite backend placeholder");
+
+    functions->init                   = init_backend;
+    functions->deinit                 = deinit_backend;
+    functions->load                   = load;
+    functions->init_execution_context = init_execution_context;
+    functions->set_input              = set_input;
+    functions->compute                = compute;
+    functions->get_output             = get_output;
+
+#else /* BH_PLATFORM_ZEPHYR*/
+
     BACKEND_INITIALIZE init = (BACKEND_INITIALIZE)dlsym(handle, "init_backend");
     if (!init) {
         NN_WARN_PRINTF("init_backend() not found");
@@ -330,6 +374,8 @@ register_backend(void *handle, api_function *functions)
     }
     functions->get_output = get_output;
 
+#endif /* BH_PLATFORM_ZEPHYR*/
+
     return true;
 }
 
@@ -337,17 +383,21 @@ static bool
 prepare_backend(const char *lib_name, struct backends_api_functions *backend)
 {
     NN_DBG_PRINTF("[Native Register] prepare_backend %s", lib_name);
-
     void *handle;
+
+#ifndef BH_PLATFORM_ZEPHYR
     handle = dlopen(lib_name, RTLD_LAZY);
     if (!handle) {
         NN_ERR_PRINTF("Error loading %s. %s", lib_name, dlerror());
         return false;
     }
+#endif /* BH_PLATFORM_ZEPHYR*/
 
     if (!register_backend(handle, &(backend->functions))) {
         NN_ERR_PRINTF("Error when registering functions of %s", lib_name);
+#ifndef BH_PLATFORM_ZEPHYR
         dlclose(handle);
+#endif
         return false;
     }
 
@@ -630,7 +680,7 @@ wasi_nn_load_by_name_with_config(wasm_exec_env_t exec_env, char *name,
     res = ensure_backend(instance, autodetect, wasi_nn_ctx);
     if (res != success)
         goto fail;
-    ;
+    // ;
 
     call_wasi_nn_func(wasi_nn_ctx->backend, load_by_name_with_config, res,
                       wasi_nn_ctx->backend_ctx, nul_terminated_name, name_len,

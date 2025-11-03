@@ -2,7 +2,16 @@
  * placeholder - add some includes 
  */
 
+ /*
+  * FIXME: Temporary workaround.
+  * Zephyr’s <zephyr/sys/cbprintf_cxx.h> causes duplicate declarations when
+  * included through bh_platform.h in C++ files.
+  * This macro prevents its inclusion to allow building the Zephyr backend.
+  */
+#define ZEPHYR_INCLUDE_SYS_CBPRINTF_CXX_H_
 #include "bh_platform.h"
+#undef ZEPHYR_INCLUDE_SYS_CBPRINTF_CXX_H_
+
 #include "wasi_nn_backend.h"
 #include "wasm_export.h"
 
@@ -28,6 +37,31 @@
 #endif
 
 
+/* Maximum number of graphs per WASM instance */
+#define WASM_INST_MAX_GRAPHS 1
+/* Maximum number of graph execution context per WASM instance*/
+#define WASM_INST_MAX_GRAPH_EXEC_CTX 1
+
+
+/* User configs */
+#ifndef TFLM_TENSOR_ARENA_SIZE 
+#define TFLM_TENSOR_ARENA_SIZE 10 * 1024 // 10 KB
+#endif
+
+
+typedef struct {
+    const tflite::Model *model;
+    tflite::MicroInterpreter *interpreter;
+    tflite::MicroMutableOpResolver<10> resolver;
+    uint8_t tensor_arena[TFLM_TENSOR_ARENA_SIZE];
+} TFLMGraph;
+
+typedef struct {
+    uint32_t current_models;
+    TFLMGraph graphs[WASM_INST_MAX_GRAPHS];
+    korp_mutex g_lock;
+} TFLMContext;
+
 /*
  * TensorFlow Lite Micro is not officially supported by the WASI-NN proposal.
  * However, since it reimplements a subset of TensorFlow Lite’s functionality
@@ -42,6 +76,8 @@
 /*
  * WASI NN - API
  */
+
+// Load a `graph` from an opaque sequence of bytes to use for inference.
 __attribute__((visibility("default"))) wasi_nn_error
 load(void *tflite_ctx, graph_builder_array *builder, graph_encoding encoding,
      execution_target target, graph *g)
